@@ -36,7 +36,7 @@
             exit(1);
         }
 
-        if ((he=gethostbyname(argv[1])) == NULL) {  /* get the host info */
+        if ((he = gethostbyname(argv[1])) == NULL) {  /* get the host info */
             herror("gethostbyname");
             exit(1);
         }
