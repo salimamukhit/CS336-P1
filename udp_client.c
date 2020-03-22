@@ -58,11 +58,11 @@ int main(int argc, char * argv[]) {
     // No data/payload just datagram
     char buffer[PCKT_LEN];
     // Our own headers' structures
-    struct ipheader *ip = (struct ipheader * ) buffer;
-    struct udpheader *udp = (struct udpheader * )(buffer + sizeof(struct ipheader));
+    struct ipheader *ip = (struct ipheader *) buffer;
+    struct udpheader *udp = (struct udpheader *)(buffer + sizeof(struct ipheader));
 
     // Source and destination addresses: IP and port
-    struct sockaddr_in sin, din;
+    struct sockaddr_in source_socket_in, dest_socket_in;
     int one = 1;
     const int *val = &one;
     memset(buffer, 0, PCKT_LEN);
@@ -89,16 +89,16 @@ int main(int argc, char * argv[]) {
 
     // The source is redundant, may be used later if needed
     // The address family
-    sin.sin_family = AF_INET;
-    din.sin_family = AF_INET;
+    source_socket_in.sin_family = AF_INET;
+    dest_socket_in.sin_family = AF_INET;
 
     // Port numbers
-    sin.sin_port = htons(atoi(argv[2]));
-    din.sin_port = htons(atoi(argv[4]));
+    source_socket_in.sin_port = htons(atoi(argv[2]));
+    dest_socket_in.sin_port = htons(atoi(argv[4]));
 
     // IP addresses
-    sin.sin_addr.s_addr = inet_addr(argv[1]);
-    din.sin_addr.s_addr = inet_addr(argv[3]);
+    source_socket_in.sin_addr.s_addr = inet_addr(argv[1]);
+    dest_socket_in.sin_addr.s_addr = inet_addr(argv[3]);
 
     // Fabricate the IP header or we can use the
     // standard header structures but assign our own values.
@@ -144,7 +144,7 @@ int main(int argc, char * argv[]) {
     for(count = 1; count <= 20; count++) {
 
         // Verify
-        if(sendto(sd, buffer, ip->iph_len, 0, (struct sockaddr *) & sin, sizeof(sin)) < 0) {
+        if(sendto(sd, buffer, ip->iph_len, 0, (struct sockaddr *) & source_socket_in, sizeof(source_socket_in)) < 0) {
             perror("sendto() error");
             exit(-1);
         } else {
