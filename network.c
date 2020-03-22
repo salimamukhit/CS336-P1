@@ -19,14 +19,7 @@
 
 #include <errno.h>
 
-// Configuration file fills our structs
-
-// UDP connection being established with the server
-
-// 12000 packet trains are bing filled with high entropy and low entropy data
-
-// Send packet trains
-
-// We receive the ICMP packets that contain the arrival times
-
-// We decide whether compression took place or no
+/* Our main function that performs configuration for all clients and servers*/
+int main() {
+    return EXIT_SUCCESS;
+}
