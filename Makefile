@@ -1,5 +1,5 @@
 # Output binary name
-bin=client_server
+bin=server
 
 # Set the following to '0' to disable log messages:
 LOGGER ?= 1
@@ -8,7 +8,7 @@ LOGGER ?= 1
 CFLAGS += -g -Wall -lm -lreadline -fPIC -DLOGGER=$(LOGGER)
 LDFLAGS +=
 
-src=client.c
+src=server.c
 obj=$(src:.c=.o)
 
 all: $(bin)
@@ -19,7 +19,7 @@ $(bin): $(obj)
 libshell.so: $(obj)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -shared -o $@
 
-client.o: client.c logger.h
+server.o: server.c logger.h next_token.h
 
 clean:
 	rm -f $(bin) $(obj) vgcore.*

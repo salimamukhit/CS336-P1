@@ -6,6 +6,7 @@
 #include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
@@ -19,7 +20,10 @@
 
 #include <errno.h>
 
+#include "next_token.h"
+
 #define PORT 35000
+#define MAX 1024
 
 // Setup socket()
 
@@ -44,8 +48,49 @@
 
 // close()
 
+void parse_ini(struct sockaddr_in *servaddr, int socket_fd) {
+    FILE* fp = fopen("received_config.ini", "r");
+    if(fp == NULL) {
+        printf("bad file...\n");
+        return;
+    }
+    char line_arr[150];
+    while(fgets(line_arr, 256, fp) != NULL) {
+        char *line = line_arr;
+        // per line there should be two tokens
+        char *name;
+        char *value;
+        name = next_token(&line, "=");
+        value = next_token(&line, "=");
+        if (strcmp(name, "ServerIP") == 0) {
+            inet_pton(AF_INET, value, &(servaddr->sin_addr));
+            //servaddr->sin_addr = inet_aton(value);
+        }
+        // Have some logic for detecting names and assign them to proper variables or struct
+        
+    }
+}
+
+void retrieve_config(FILE *file, struct sockaddr_in *servaddr, int socket_fd) {
+    char buff[MAX] = { 0 };  // to store message from client
+
+    FILE *fp = fopen("received_config.ini","w"); // stores the file content in recieved.txt in the program directory
+
+    if(fp == NULL){
+        printf("Error IN Opening File ");
+        return ;
+    }
+
+    while(read(socket_fd, buff, MAX) > 0)
+        fprintf(fp,"%s",buff);
+
+    printf("File received successfully !! \n");
+    printf("New File created is received.txt !! \n");
+}
+
 int main(int argc, char *argv[]) {
     printf("HI\n");
+    // parse_ini();
 
     // Setup socket()
 

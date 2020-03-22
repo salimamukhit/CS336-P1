@@ -48,7 +48,7 @@
 
         their_addr.sin_family = AF_INET;      /* host byte order */
         their_addr.sin_port = htons(PORT);    /* short, network byte order */
-        their_addr.sin_addr = *((struct in_addr *)he->h_addr);
+        their_addr.sin_addr = *((struct in_addr *)he->h_addr_list);
         bzero(&(their_addr.sin_zero), 8);     /* zero the rest of the struct */
 
         if (connect(sockfd, (struct sockaddr *)&their_addr, \
