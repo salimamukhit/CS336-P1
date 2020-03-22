@@ -1,7 +1,4 @@
 .vscode
-<<<<<<< HEAD
 *.o
-=======
 cmake-build-debug
 CMakeLists.txt
->>>>>>> 1288a17d15a613b963bf0ae24d765cb011c47ce9
