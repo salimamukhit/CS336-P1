@@ -1,3 +1,15 @@
+TARGET=client server 
+CC=gcc
+CFLAGS= -Wall -Wextra -g
+normal: $(TARGET)
+client: client.c
+    $(CC) $(CFLAGS) client.c -o client
+server: server.c
+    $(CC) $(CFLAGS) server.c -o server
+clean:
+    $(RM) $(TARGET) vgcore.*
+
+
 # Output binary name
 bin=server
 
@@ -22,4 +34,5 @@ libshell.so: $(obj)
 server.o: server.c logger.h next_token.h
 
 clean:
-	rm -f $(bin) $(obj) vgcore.*
+	rm -f $(bin) $(obj) 
+	

@@ -94,7 +94,7 @@ unsigned short csum(unsigned short *buf, int nwords) {
 }
 
 // Source IP, source port, target IP, target port from the command line arguments
-int main(int argc, char * argv[]) {
+int udp_train(int argc, char * argv[]) {
     int sd;
     // No data/payload just datagram
     char buffer[PCKT_LEN];
