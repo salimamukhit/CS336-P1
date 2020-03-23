@@ -3,3 +3,18 @@
 cmake-build-debug
 CMakeLists.txt
 .idea
+
+# Don't include the binaries
+client_server
+client
+server
+next_token
+udp_client
+tcp_client
+server
+logger
+
+recieved_config.ini
+
+# Ignore everything in the ./bin folder
+bin*

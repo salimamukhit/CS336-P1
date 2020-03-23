@@ -50,58 +50,31 @@ int parse_ini(struct sockaddr_in *server_address, struct udpheader *train_udp, s
         if (returnValue(line, "ServerIP") != NULL) {
             value = returnValue(line, "ServerIP");
             inet_pton(AF_INET, value, &(server_address->sin_addr));
-        } else {
-            return 0;
-        }
-        if (returnValue(line, "SourceUDP") != NULL) {
+        } else if (returnValue(line, "SourceUDP") != NULL) {
             value = returnValue(line, "SourceUDP");
             train_udp->udph_srcport = atoi(value);
-        } else {
-            return 0;
-        }
-        if (returnValue(line, "DestinationUDP") != NULL) {
+        } else if (returnValue(line, "DestinationUDP") != NULL) {
             value = returnValue(line, "DestinationUDP");
             train_udp->udph_destport = atoi(value);
-        } else {
-            return 0;
-        }
-        if (returnValue(line, "HeadDestinationTCP") != NULL) {
+        } else if (returnValue(line, "HeadDestinationTCP") != NULL) {
             value = returnValue(line, "HeadDestinationTCP");
             client_address->sin_port = atoi(value);
-        } else {
-            return 0;
-        }
-        if (returnValue(line, "TailDestinationTCP") != NULL) {
+        } else if (returnValue(line, "TailDestinationTCP") != NULL) {
             value = returnValue(line, "TailDestinationTCP");
             client_address->sin_port = atoi(value);
-        } else {
-            return 0;
-        }
-        if (returnValue(line, "PortNumberTCP") != NULL) {
+        } else if (returnValue(line, "PortNumberTCP") != NULL) {
             value = returnValue(line, "PortNumberTCP");
             server_address->sin_port = atoi(value);
-        } else {
-            return 0;
-        }
-        if (returnValue(line, "PayloadSizeUDP") != NULL) {
+        } else if (returnValue(line, "PayloadSizeUDP") != NULL) {
             value = returnValue(line, "PayloadSizeUDP");
             one_packet->payload_size = atoi(value);
-        } else {
-            return 0;
-        }
-        if (returnValue(line, "InterMeasurementTime") != NULL) {
+        } else if (returnValue(line, "InterMeasurementTime") != NULL) {
             value = returnValue(line, "InterMeasurementTime");
             meas_time = (time_t)atoi(value);
-        } else {
-            return 0;
-        }
-        if (returnValue(line, "NumberPackets") != NULL) {
+        } else if (returnValue(line, "NumberPackets") != NULL) {
             value = returnValue(line, "NumberPackets");
             packet_num = atoi(value);
-        } else {
-            return 0;
-        }
-        if (returnValue(line, "TimeToLiveUDP") != NULL) {
+        } else if (returnValue(line, "TimeToLiveUDP") != NULL) {
             value = returnValue(line, "TimeToLiveUDP");
             one_packet->ttl = atoi(value);
         } else {

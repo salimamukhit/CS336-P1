@@ -1,4 +1,4 @@
-TARGET=client server 
+TARGET=./bin/client ./bin/server 
 CC=gcc
 CFLAGS= -Wall -Wextra -g
 normal: $(TARGET)
@@ -10,29 +10,30 @@ clean:
     $(RM) $(TARGET) vgcore.*
 
 
+
 # Output binary name
-bin=server
+#bin=server
 
 # Set the following to '0' to disable log messages:
-LOGGER ?= 1
+#LOGGER ?= 1
 
 # Compiler/linker flags
-CFLAGS += -g -Wall -lm -lreadline -fPIC -DLOGGER=$(LOGGER)
-LDFLAGS +=
+#CFLAGS += -g -Wall -lm -lreadline -fPIC -DLOGGER=$(LOGGER)
+#LDFLAGS +=
 
-src=server.c
-obj=$(src:.c=.o)
+#src=server.c
+#obj=$(src:.c=.o)
 
-all: $(bin)
+#all: $(bin)
 
-$(bin): $(obj)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -o $@
+#$(bin): $(obj)
+#	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -o $@
 
-libshell.so: $(obj)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -shared -o $@
+#libshell.so: $(obj)
+#	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -shared -o $@
 
-server.o: server.c logger.h next_token.h
+#server.o: server.c logger.h next_token.h
 
-clean:
-	rm -f $(bin) $(obj) 
+#clean:
+#	rm -f $(bin) $(obj) 
 	
