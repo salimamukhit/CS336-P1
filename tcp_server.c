@@ -40,6 +40,8 @@ int retrieve_config(int socket_fd) {
 
     printf("File received successfully !! \n");
     printf("New File created is received.txt !! \n");
+
+    return 0;
 }
 
 /**
@@ -49,7 +51,8 @@ int retrieve_config(int socket_fd) {
  * @return int 
  */
 int start_server(u_int16_t port, int step_num) {
-    int sockfd, connfd, len; 
+    int sockfd, connfd;
+    unsigned int len; 
     struct sockaddr_in servaddr, cli; 
   
     // socket create and verification 
@@ -71,7 +74,7 @@ int start_server(u_int16_t port, int step_num) {
     // Binding newly created socket to given IP and verification 
     if((bind(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr))) != 0) { 
         printf("socket bind failed...\n"); 
-        exit(0); 
+        return -1;
     } 
     else
         printf("Socket successfully binded..\n"); 
@@ -79,7 +82,7 @@ int start_server(u_int16_t port, int step_num) {
     // Now server is ready to listen and verification 
     if((listen(sockfd, 5)) != 0) { 
         printf("Listen failed...\n"); 
-        exit(0); 
+        return -1;
     } 
     else
         printf("Server listening..\n"); 
@@ -89,7 +92,7 @@ int start_server(u_int16_t port, int step_num) {
     connfd = accept(sockfd, (struct sockaddr*) &cli, &len); 
     if(connfd < 0) { 
         printf("server acccept failed...\n"); 
-        exit(0); 
+        return -1;
     } 
     else
         printf("server acccept the client...\n");
@@ -106,4 +109,5 @@ int start_server(u_int16_t port, int step_num) {
   
     // After chatting close the socket 
     close(sockfd);
+    return 0;
 }
