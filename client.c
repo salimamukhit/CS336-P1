@@ -19,8 +19,11 @@
 #include <net/ethernet.h>
 
 #include "next_token.h" // Needed for parsing the config file
+#include "ini_parser.h"
 #include "udp_client.h"
 #include "tcp_client.h"
+
+#define INI_NAME "config.ini"
 
 /* Setting up all the structs */
 struct udpheader {
@@ -50,7 +53,7 @@ int start_client(int selection) {
     struct udppacket one_packet; // One packet from a train
     time_t meas_time;
     unsigned short int packet_num;
-    if(parse_ini(&server_address, &train_udp, &client_address, &one_packet, &meas_time, &packet_num) == 0) {
+    if(parse_ini(INI_NAME, &server_address, &train_udp, &client_address, &one_packet, &meas_time, &packet_num) == 0) {
         return EXIT_FAILURE;
     }
     one_packet.udp_header = train_udp;
@@ -58,5 +61,7 @@ int start_client(int selection) {
     // FOR THE FOLLOWING WE WILL USE THE SELECTION INTEGER TO DECIDE WHICH SERVICE TO START
     // establish UDP communication between a udp client and a server
     // establish TCP communication between a server and tcp client
+    
+
     return EXIT_SUCCESS;
 }
