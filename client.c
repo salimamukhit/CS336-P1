@@ -25,20 +25,7 @@
 
 #define INI_NAME "config.ini"
 
-/* Setting up all the structs */
-struct udpheader {
-    unsigned short int udph_srcport;
-    unsigned short int udph_destport;
-    unsigned short int udph_len;
-    unsigned short int udph_chksum;
-};
-
-struct udppacket {
-    struct udpheader udp_header;
-    uint8_t payload_size;
-    uint8_t ttl;
-    char data[];
-};
+int x;
 
 /**
  * @brief Performs configuration for the client
@@ -47,16 +34,20 @@ struct udppacket {
  */
 int start_client(int selection) {
     /* Declaration of all structs that we will pass to respective clients and operate on*/
-    struct sockaddr_in server_address; // Socket address of a server
+    /*struct sockaddr_in server_address; // Socket address of a server
     struct sockaddr_in client_address; // Socket address of a client
     struct udpheader train_udp; // UDP header for a packet in a packet train
     struct udppacket one_packet; // One packet from a train
     time_t meas_time;
-    unsigned short int packet_num;
-    if(parse_ini(INI_NAME, &server_address, &train_udp, &client_address, &one_packet, &meas_time, &packet_num) == 0) {
+    unsigned short int packet_num; */
+
+    char *filename = "config.ini";
+    struct ini_info *info = calloc(1, sizeof(struct ini_info));
+    info->file_name = filename; 
+
+    if(parse_ini(info) == NULL) {
         return EXIT_FAILURE;
     }
-    one_packet.udp_header = train_udp;
 
     // FOR THE FOLLOWING WE WILL USE THE SELECTION INTEGER TO DECIDE WHICH SERVICE TO START
     // establish UDP communication between a udp client and a server
