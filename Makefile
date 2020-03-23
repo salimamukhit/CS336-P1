@@ -1,39 +1,39 @@
-TARGET=./bin/client ./bin/server 
-CC=gcc
-CFLAGS= -Wall -Wextra -g
-normal: $(TARGET)
-client: client.c
-    $(CC) $(CFLAGS) client.c -o client
-server: server.c
-    $(CC) $(CFLAGS) server.c -o server
-clean:
-    $(RM) $(TARGET) vgcore.*
-
-
-
-# Output binary name
-#bin=server
-
 # Set the following to '0' to disable log messages:
-#LOGGER ?= 1
+LOGGER ?= 1
 
-# Compiler/linker flags
-#CFLAGS += -g -Wall -lm -lreadline -fPIC -DLOGGER=$(LOGGER)
-#LDFLAGS +=
+TARGET=client server
+CC=gcc
+CFLAGS += -g -Wall -lm -fPIC -DLOGGER=$(LOGGER) -lreadline
 
-#src=server.c
-#obj=$(src:.c=.o)
+# Source C files
+#globalsrc= ini_parser.c next_token.c
+serversrc= server.c tcp_server.c udp_server.c
+clientsrc= client.c tcp_client.c udp_client.c
+src=$(serversrc) $(clientsrc)
 
-#all: $(bin)
+obj=$(src:.c=.o)
 
-#$(bin): $(obj)
-#	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -o $@
+$(TARGET): $(obj)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -o $@
 
-#libshell.so: $(obj)
-#	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -shared -o $@
+# Individual dependencies --
+server.o: server.c tcp_server.h udp_server.h logger.h
+tcp_server.o: tcp_server.c logger.h
+udp_server.o: udp_server.c logger.h
 
-#server.o: server.c logger.h next_token.h
+client.o: tcp_client.c tcp_client.h udp_client.h logger.h
+tcp_client.o: tcp_client.c logger.h
+udp_client.o: udp_client.c logger.h
 
-#clean:
-#	rm -f $(bin) $(obj) 
+# Normal compilation
+
+normal: $(TARGET)
+
+client: client.c
+	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -o client
+server: server.c
+	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -o server
+
+clean:
+	$(RM) $(TARGET) $(obj) vgcore.*
 	

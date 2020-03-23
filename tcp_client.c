@@ -1,15 +1,3 @@
-/***************************************************************************/
-/*                                                                         */    
-/* Client program which gets as parameter the server name or               */    
-/*     address and tries to send the data into non-blocking server.        */    
-/*                                                                         */    
-/* The message is sent after 5 seconds of wait                             */    
-/*                                                                         */    
-/*                                                                         */    
-/* based on Beej's program - look in the simple TCp client for further doc.*/    
-/*                                                                         */    
-/*                                                                         */    
-/***************************************************************************/
     #include <stdio.h> 
     #include <stdlib.h> 
     #include <errno.h> 

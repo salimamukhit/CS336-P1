@@ -76,7 +76,7 @@ int udp_train(int argc, char * argv[]) {
     const int *val = &one;
     memset(buffer, 0, PCKT_LEN);
 
-    if(argc != 5){
+    if(argc != 4){
         printf("- Invalid parameters!!!\n");
         printf("- Usage %s <source hostname/IP> <source port> <target hostname/IP> <target port>\n", argv[0]);
         exit(-1);
@@ -164,5 +164,4 @@ int udp_train(int argc, char * argv[]) {
     close(sd);
 
     return 0;
-
 }

@@ -1,5 +1,5 @@
 /**
-* @file Retrieves the next token from a string.
+* @file Handles all the UDP train sending and making.
 */ 
 
 #ifndef _UDP_CLIENT_H_
@@ -31,26 +31,10 @@ struct udpheader {
     unsigned short int udph_chksum;
 };
 
-void parse_ini(struct sockaddr_in *servaddr, int socket_fd, struct udpheader *client_udp);
-
-void retrieve_config(FILE *file, struct sockaddr_in *servaddr, int socket_fd);
-
 unsigned short csum(unsigned short *buf, int nwords) {
 
-/**
- * Retrieves the next token from a string.
- *
- * Parameters:
- * - str_ptr: maintains context in the string, i.e., where the next token in the
- *   string will be. If the function returns token N, then str_ptr will be
- *   updated to point to token N+1. To initialize, declare a char * that points
- *   to the string being tokenized. The pointer will be updated after each
- *   successive call to next_token.
- *
- * - delim: the set of characters to use as delimiters
- *
- * @returns: char pointer to the next token in the string.
- */
+
+// Source IP, source port, target IP, target port from the command line arguments
 int udp_train(int argc, char * argv[]);
 
 #endif

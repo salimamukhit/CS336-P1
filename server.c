@@ -1,129 +1,54 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
 
-#include <netdb.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
-#include <arpa/inet.h>        
-#include <sys/ioctl.h>        
-#include <bits/ioctls.h>      
-#include <net/if.h>           
-#include <linux/if_ether.h>   
-#include <linux/if_packet.h>  
-#include <net/ethernet.h>
+#include "tcp_server.h"
+#include "udp_server.h"
 
-#include <errno.h>
+#define EMPEMERAL_START 49152
+#define PORT_MAX 65535
+#define CONFIG_STEP 0
+#define UDP_STEP 1
 
-#include "next_token.h"
-
-#define PORT 35000
-#define MAX 1024
-
-// Setup socket()
-
-// Specifying Socket Connection Information
-// IMPORTANT: this can be cast to a (struct sockaddr) later
-//struct sockaddr_in {
-//    unsigned short sin_family; /* Address Family for the Socket IN (AF_INET) */
-//    unsigned short sin_port; /* Address Port for the Socket IN (16 bits) */
-//    struct in_addr sin_addr; /* Internet Address for the Socket IN (32 bits) */
-//    char sin_zero[8];       /* Not used */
-//}
-
-// bind()
-
-// listen()
-
-// accept()
-
-// recv()
-
-// send() - loop to recv()
-
-// close()
-
-
+/**
+ * @brief Starts the server and handles the transitioning between the TCP -> UDP -> TCP steps
+ * 
+ * @param argc the number to arguments
+ * @param argv the command line instruction containing the port number (e.g. {"server", "1337"})
+ * @return int success for failure
+ */
 int main(int argc, char *argv[]) {
-    printf("HI\n");
-
-    // Setup socket()
-
-    // bind()
-
-    // listen()
-
-    // accept()
-
-    // recv()
-
-    // send() - loop to recv()
-
-    // close()
-
-
-    int sockfd, connfd, len; 
-    struct sockaddr_in servaddr, cli; 
-  
-    // socket create and verification 
-    sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); 
-    if (sockfd == -1) {
-        printf("socket creation failed...\n"); 
-        exit(0); 
-    } 
-    else {
-        printf("Socket successfully created..\n"); 
+    if(argc != 1) {
+        fprintf(stderr, "No port number specified or too many arguments!\n");
+        exit(EXIT_FAILURE);
     }
-    bzero(&servaddr, sizeof(servaddr)); 
-  
-    // assign IP, PORT 
-    servaddr.sin_family = AF_INET; 
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
-    servaddr.sin_port = htons(PORT); 
-  
-    // Binding newly created socket to given IP and verification 
-    if ((bind(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr))) != 0) { 
-        printf("socket bind failed...\n"); 
-        exit(0); 
-    } 
-    else
-        printf("Socket successfully binded..\n"); 
-  
-    // Now server is ready to listen and verification 
-    if ((listen(sockfd, 5)) != 0) { 
-        printf("Listen failed...\n"); 
-        exit(0); 
-    } 
-    else
-        printf("Server listening..\n"); 
-    len = sizeof(cli);
-  
-    // Accept the data packet from client and verification 
-    connfd = accept(sockfd, (struct sockaddr*) &cli, &len); 
-    if (connfd < 0) { 
-        printf("server acccept failed...\n"); 
-        exit(0); 
-    } 
-    else
-        printf("server acccept the client...\n");
+    if(isdigit(argv[1]) == 0) {
+        fprintf(stderr, "The port number is not a number! Please choose one in the range 49152 to 65535\n");
+        exit(EXIT_FAILURE);
+    }
+
+    int port = atoi(argv[1]);
+
+    if(port < 1) {
+        fprintf(stderr, "C'mon you can't have a negative port! Please choose one in the range 49152 to 65535\n");
+    }
+    else if(port < EMPEMERAL_START) {
+        fprintf(stderr, "Not an empemeral port! Please choose one in the range 49152 to 65535\n");
+    }
+    else if(65535 < PORT_MAX) {
+        fprintf(stderr, "Port is not in the valid range! Please choose on in the range 49152 to 65535\n");
+    }
+
+    /* Listen for the config file and if there is error don't continue */ /* Specify step number 0 as well */
+    if(start_server((u_int16_t) port, CONFIG_STEP) < 0) {
+        perror("Something happend in the TCP connection for retriving the .INI");
+        exit(EXIT_FAILURE);
+    }
     
+    /* Listen for the UDP files and create the analytics. */
+    /* This function should automatically call the next step to send back the results */
+    // TODO create a UDP server...
 
-    // Read client data:
-    char read_buffer[1024] = { 0 };
-    read(connfd, read_buffer, 1024);
-    printf("Client says: %s\n", read_buffer);
-  
-    // Function for chatting between client and server
-    char *response_buf = "Hi there bruh!";
-    write(connfd, response_buf, strlen(response_buf));
-  
-    // After chatting close the socket 
-    close(sockfd); 
-
+    
     return 0;
 }
