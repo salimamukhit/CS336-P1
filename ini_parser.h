@@ -1,4 +1,6 @@
-#include <netdb.h>
+/**
+* @file Parses a INI file.
+*/
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -43,5 +45,14 @@ struct ini_info {
  * @return int returns ini_info type information if parsing was successful, NULL otherwise
  */
 struct ini_struct* parse_ini(struct ini_info *parsed_info);
+
+/**
+ * @brief Returns the NAME=VALUE pair from the provided line.
+ * 
+ * @param line the provided line
+ * @param var_name name that we are looking for
+ * @return char 
+ */
+char returnValue(char* line, char var_name[]);
 
 #endif

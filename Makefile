@@ -25,15 +25,14 @@ client.o: tcp_client.c tcp_client.h udp_client.h logger.h
 tcp_client.o: tcp_client.c logger.h
 udp_client.o: udp_client.c logger.h
 
-# Normal compilation
-
-normal: $(TARGET)
-
-client: client.c
-	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -o client
-server: server.c
-	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -o server
-
 clean:
 	$(RM) $(TARGET) $(obj) vgcore.*
-	
+
+# Old compilation method...
+
+#normal: $(TARGET)
+
+#client: client.c
+#	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -o client
+#server: server.c
+#	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -o server
