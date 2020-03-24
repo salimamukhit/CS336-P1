@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 
 #include <netdb.h>
 #include <sys/types.h>
@@ -18,8 +19,14 @@
 #include <linux/if_packet.h>  
 #include <net/ethernet.h>
 
-#include <errno.h>
+/**
+* @file Handles all TCP communications for the server.
+*/ 
+
+#ifndef _TCP_SERVER_H_
+#define _TCP_SERVER_H_
 
 int retrieve_config(int socket_fd);
-
 int start_server(u_int16_t port, int step_num);
+
+#endif
