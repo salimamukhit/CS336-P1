@@ -25,8 +25,6 @@
 
 #define INI_NAME "config.ini"
 
-int x;
-
 /**
  * @brief Performs configuration for the client
  * 
@@ -52,7 +50,7 @@ int start_client(int selection) {
     // FOR THE FOLLOWING WE WILL USE THE SELECTION INTEGER TO DECIDE WHICH SERVICE TO START
     // establish UDP communication between a udp client and a server
     // establish TCP communication between a server and tcp client
-    
+
 
     return EXIT_SUCCESS;
 }
