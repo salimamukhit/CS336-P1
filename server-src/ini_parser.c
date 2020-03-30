@@ -46,6 +46,7 @@ char returnValue(char* line, char var_name[]) {
  */
 struct ini_info* parse_ini(struct ini_info *parsed_info) {
     FILE* fp = fopen(*(parsed_info->file_name), "r");
+    LOG("FILE*: %p\n", fp);
     if(fp == NULL) {
         return NULL;
     }

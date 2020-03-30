@@ -9,15 +9,15 @@
 #include <unistd.h>
 
 #define PORT 35000    /* the port client will be connecting to */
-
 #define MAXDATASIZE 100 /* max number of bytes we can get at once */
 
-int send_config(int argc, char *argv[]) {
+int send_config(int argc, char *argv[], struct ini_info *info) {
     int sockfd, numbytes;  
     char buf[MAXDATASIZE];
     struct hostent *he;
     struct sockaddr_in their_addr; /* connector's address information */
 
+    goto afterparse;
     if(argc != 2) {
         fprintf(stderr,"usage: client hostname\n");
         exit(1);
@@ -28,6 +28,7 @@ int send_config(int argc, char *argv[]) {
         exit(1);
     }
 
+afterparse:
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("socket");
         exit(1);

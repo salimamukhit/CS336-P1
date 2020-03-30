@@ -20,23 +20,30 @@
 
 #include "ini_parser.h"
 #include "next_token.h"
+#include "logger.h"
 
 /**
  * @brief Returns the NAME=VALUE pair from the provided line.
  * 
  * @param line the provided line
- * @param var_name name that we are looking for
+ * @param name a zeroed out array in which to put the name
+ * @param value a zeroed out array in which to put the value
  * @return char 
  */
-char returnValue(char* line, char var_name[]) {
-    char *name;
-    char *value;
-    name = next_token(&line, "=");
-    value = next_token(&line, "=");
-    if(strcmp(name, var_name) == 0) {
-        return value;
-    }
-    return NULL;
+int extractor(char* line, char name[], char value[]) {
+    if(line == NULL) return -1;
+    LOG("TEMP LINE:  \"%s\"\n", line);
+
+    char* token1 = next_token(&line, "=");
+    strcpy(name, token1);
+    LOG("Name: \"%s\"\n", name);
+
+    char* token2 = next_token(&line, "=");
+    strcpy(value, token2);
+    LOG("Value: \"%s\"\n", value);
+
+    if(name == NULL || value==NULL) return -1;
+    else return 0;
 }
 
 /**
@@ -45,47 +52,65 @@ char returnValue(char* line, char var_name[]) {
  * @return int returns ini_info type information if parsing was successful, NULL otherwise
  */
 struct ini_info* parse_ini(struct ini_info *parsed_info) {
-    FILE* fp = fopen(*(parsed_info->file_name), "r");
+    LOG("file_name: \"%s\"\n", parsed_info->file_name);
+    FILE* fp = fopen(parsed_info->file_name, "r");
+    LOG("FILE*: %p\n", fp);
     if(fp == NULL) {
         return NULL;
     }
     
-    char line_arr[256];
+    char line_arr[256] = { 0 };
     while(fgets(line_arr, 256, fp) != NULL) {
+        // Strip the newline character from the end
+        *(line_arr + strnlen(line_arr, 256)-1) = '\0';
+
         char *line = line_arr; // per line there should be two tokens
-        char *value;
+        char value[128] = { 0 };
+        char name[128] = { 0 };
+
+        LOG("LINE:  %s\n", line);
+
+        if(extractor(line, name, value) == -1) return NULL;
+
+        LOG("Name2: \"%s\"\n", name);
+        LOG("Value2: \"%s\"\n", value);
+
+
+        LOG("COMP: %d\n\n", strncmp(name, "ServerIP", 255));
         
-        if(returnValue(line, "ServerIP") != NULL) {
-            value = returnValue(line, "ServerIP");
+        // BUG is that line gets used up by next token
+        if(strncmp(name, "ServerIP", 255) == 0) {
+            LOGP("Server IP!!!!\n");
             inet_pton(AF_INET, value, &(parsed_info->server_ip));
-        } else if(returnValue(line, "SourceUDP") != NULL) {
-            value = returnValue(line, "SourceUDP");
+        } 
+        else if(strncmp(name, "SourceUDP", 255) == 0) {
             parsed_info->train_udp.udph_srcport = (unsigned short int)atoi(value);
-        } else if(returnValue(line, "DestinationUDP") != NULL) {
-            value = returnValue(line, "DestinationUDP");
+        } 
+        else if(strncmp(name, "DestinationUDP", 255) == 0) {
             parsed_info->train_udp.udph_destport = (unsigned short int)atoi(value);
-        } else if(returnValue(line, "HeadDestinationTCP") != NULL) {
-            value = returnValue(line, "HeadDestinationTCP");
+        } 
+        else if(strncmp(name, "HeadDestinationTCP", 255) == 0) {
             parsed_info->head_port = (unsigned short int)atoi(value);
-        } else if(returnValue(line, "TailDestinationTCP") != NULL) {
-            value = returnValue(line, "TailDestinationTCP");
+        } 
+        else if(strncmp(name, "TailDestinationTCP", 255) == 0) {
             parsed_info->tail_port = (unsigned short int)atoi(value);
-        } else if(returnValue(line, "PortNumberTCP") != NULL) {
-            value = returnValue(line, "PortNumberTCP");
+        } 
+        else if(strncmp(name, "PortNumberTCP", 255) == 0) {
             parsed_info->client_port = (unsigned short int)atoi(value);
-        } else if(returnValue(line, "PayloadSizeUDP") != NULL) {
-            value = returnValue(line, "PayloadSizeUDP");
+        } 
+        else if(strncmp(name, "PayloadSizeUDP", 255) == 0) {
             parsed_info->payload_size = (unsigned short int)atoi(value);
-        } else if(returnValue(line, "InterMeasurementTime") != NULL) {
-            value = returnValue(line, "InterMeasurementTime");
+        } 
+        else if(strncmp(name, "InterMeasurementTime", 255) == 0) {
             parsed_info->meas_time = (time_t)atoi(value);
-        } else if(returnValue(line, "NumberPackets") != NULL) {
-            value = returnValue(line, "NumberPackets");
+        } 
+        else if(strncmp(name, "NumberPackets", 255) == 0) {
             parsed_info->packet_num = (unsigned short int)atoi(value);
-        } else if(returnValue(line, "TimeToLiveUDP") != NULL) {
-            value = returnValue(line, "TimeToLiveUDP");
+        } 
+        else if(strncmp(name, "TimeToLiveUDP", 255) == 0) {
             parsed_info->packet_ttl = (unsigned short int)atoi(value);
-        } else {
+        } 
+        else {
             return NULL;
         }
     }

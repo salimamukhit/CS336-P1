@@ -42,15 +42,19 @@ int main(int argc, char* argv[]) {
     unsigned short int packet_num; */
 
     char *filename = "config.ini";
-    LOG("Size of ini_info struct: %d\n", sizeof(struct ini_info));
+    LOG("Size of ini_info struct: %ld\n", sizeof(struct ini_info));
     struct ini_info *info = calloc(1, sizeof(struct ini_info));
     LOGP("Set struct ini_info and filename\n");
-    strncpy(&info->file_name, filename, 1023);
+    strncpy(info->file_name, filename, 1023);
     LOGP("Copied file name into struct\n");
 
     if(parse_ini(info) == NULL) {
+        fprintf(stderr, "Failed to parse the INI file!\n");
         return EXIT_FAILURE;
     }
+    printf("Successfully parsed INI file\n");
+
+    //send_config(argc, argv, info);
 
     /* Filling our data with info from retrieved ini struct */
     /* Information needed for a client: all of the fields */

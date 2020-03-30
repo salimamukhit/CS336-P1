@@ -5,6 +5,8 @@
 #ifndef _TCP_CLIENT_H_
 #define _TCP_CLIENT_H_
 
-int send_config(int argc, char *argv[]);
+#include "ini_parser.h"
+
+int send_config(int argc, char *argv[], struct ini_info *info);
 
 #endif
