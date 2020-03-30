@@ -38,9 +38,8 @@ struct udpheader {
 
 // UDP packet's structure
 struct udppacket {
-    struct udpheader udp_header;
-    uint8_t payload_size;
-    uint8_t ttl;
+    struct ipheader iphdr;
+    struct udpheader udphdr;
     char data[];
 };
 

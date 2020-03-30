@@ -20,23 +20,6 @@
 
 #include "ini_parser.h"
 #include "next_token.h"
-#include "udp_client.h"
-#include "udp_server.h"
-
-/* struct with infro from ini to be returned */
-
-struct ini_info {
-    char *file_name;
-    struct in_addr server_ip;
-    struct udpheader train_udp;
-    unsigned short head_port;
-    unsigned short tail_port;
-    unsigned short client_port;
-    uint8_t payload_size;
-    time_t meas_time;
-    uint8_t packet_num;
-    uint8_t packet_ttl;
-};
 
 /**
  * @brief Returns the NAME=VALUE pair from the provided line.
@@ -61,11 +44,12 @@ char returnValue(char* line, char var_name[]) {
  * @param parsed_info is a pointer to the information to be distributed
  * @return int returns ini_info type information if parsing was successful, NULL otherwise
  */
-struct ini_struct* parse_ini(struct ini_info *parsed_info) {
-    FILE* fp = fopen(parsed_info->file_name, "r");
+struct ini_info* parse_ini(struct ini_info *parsed_info) {
+    FILE* fp = fopen(*(parsed_info->file_name), "r");
     if(fp == NULL) {
         return NULL;
     }
+    
     char line_arr[256];
     while(fgets(line_arr, 256, fp) != NULL) {
         char *line = line_arr; // per line there should be two tokens
@@ -91,16 +75,16 @@ struct ini_struct* parse_ini(struct ini_info *parsed_info) {
             parsed_info->client_port = (unsigned short int)atoi(value);
         } else if(returnValue(line, "PayloadSizeUDP") != NULL) {
             value = returnValue(line, "PayloadSizeUDP");
-            parsed_info->payload_size = (uint8_t)atoi(value);
+            parsed_info->payload_size = (unsigned short int)atoi(value);
         } else if(returnValue(line, "InterMeasurementTime") != NULL) {
             value = returnValue(line, "InterMeasurementTime");
             parsed_info->meas_time = (time_t)atoi(value);
         } else if(returnValue(line, "NumberPackets") != NULL) {
             value = returnValue(line, "NumberPackets");
-            parsed_info->packet_num = (uint8_t)atoi(value);
+            parsed_info->packet_num = (unsigned short int)atoi(value);
         } else if(returnValue(line, "TimeToLiveUDP") != NULL) {
             value = returnValue(line, "TimeToLiveUDP");
-            parsed_info->packet_ttl = (uint8_t)atoi(value);
+            parsed_info->packet_ttl = (unsigned short int)atoi(value);
         } else {
             return NULL;
         }

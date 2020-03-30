@@ -21,7 +21,7 @@ server.o: server.c tcp_server.h udp_server.h tcp_client.h udp_client.h logger.h 
 tcp_server.o: tcp_server.c tcp_server.h logger.h next_token.h ini_parser.h
 udp_server.o: udp_server.c udp_server.h logger.h
 
-client.o: client.c tcp_client.h udp_client.h logger.h
+client.o: client.c tcp_client.h udp_client.h logger.h next_token.h ini_parser.h
 tcp_client.o: tcp_client.c tcp_client.h logger.h
 udp_client.o: udp_client.c udp_client.h logger.h
 

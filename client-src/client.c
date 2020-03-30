@@ -22,6 +22,7 @@
 #include "ini_parser.h"
 #include "udp_client.h"
 #include "tcp_client.h"
+#include "logger.h"
 
 #define INI_NAME "config.ini"
 
@@ -30,7 +31,8 @@
  * 
  * @return int failure or success
  */
-int start_client(int selection) {
+int main(int argc, char* argv[]) {
+    LOGP("Client Started :)\n");
     /* Declaration of all structs that we will pass to respective clients and operate on*/
     /*struct sockaddr_in server_address; // Socket address of a server
     struct sockaddr_in client_address; // Socket address of a client
@@ -40,12 +42,18 @@ int start_client(int selection) {
     unsigned short int packet_num; */
 
     char *filename = "config.ini";
+    LOG("Size of ini_info struct: %d\n", sizeof(struct ini_info));
     struct ini_info *info = calloc(1, sizeof(struct ini_info));
-    info->file_name = filename; 
+    LOGP("Set struct ini_info and filename\n");
+    strncpy(&info->file_name, filename, 1023);
+    LOGP("Copied file name into struct\n");
 
     if(parse_ini(info) == NULL) {
         return EXIT_FAILURE;
     }
+
+    /* Filling our data with info from retrieved ini struct */
+    /* Information needed for a client: all of the fields */
 
     // FOR THE FOLLOWING WE WILL USE THE SELECTION INTEGER TO DECIDE WHICH SERVICE TO START
     // establish UDP communication between a udp client and a server

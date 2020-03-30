@@ -14,9 +14,6 @@
 #include <linux/if_packet.h>  
 #include <net/ethernet.h>
 
-#include "udp_client.h"
-#include "udp_server.h"
-
 /**
 * @file Parses a INI file
 */ 
@@ -25,18 +22,20 @@
 #define _INI_PARSER_H_
 
 #include <sys/types.h>
+#include "udp_client.h"
 
+/* struct with info from ini to be returned */
 struct ini_info {
-    char *file_name;
+    char file_name[1024];
     struct in_addr server_ip;
     struct udpheader train_udp;
     unsigned short head_port;
     unsigned short tail_port;
     unsigned short client_port;
-    uint8_t payload_size;
+    unsigned short int payload_size;
     time_t meas_time;
-    uint8_t packet_num;
-    uint8_t packet_ttl;
+    unsigned short int packet_num;
+    unsigned short int packet_ttl;
 };
 
 /**
@@ -44,7 +43,7 @@ struct ini_info {
  * @param parsed_info is a pointer to the information to be distributed
  * @return int returns ini_info type information if parsing was successful, NULL otherwise
  */
-struct ini_struct* parse_ini(struct ini_info *parsed_info);
+struct ini_info* parse_ini(struct ini_info *parsed_info);
 
 /**
  * @brief Returns the NAME=VALUE pair from the provided line.

@@ -31,7 +31,13 @@ struct udpheader {
     unsigned short int udph_chksum;
 };
 
-unsigned short csum(unsigned short *buf, int nwords) {
+struct udppacket {
+    struct ipheader iphdr;
+    struct udpheader udphdr;
+    char data[];
+};
+
+unsigned short csum(unsigned short *buf, int nwords);
 
 
 // Source IP, source port, target IP, target port from the command line arguments
