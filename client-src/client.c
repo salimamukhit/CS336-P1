@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
     strncpy(info->file_name, filename, 1023);
     LOGP("Copied file name into struct\n");
 
-    if(parse_ini(info) == NULL) {
+    if(parse_ini(info) == -1) {
         fprintf(stderr, "Failed to parse the INI file!\n");
         return EXIT_FAILURE;
     }

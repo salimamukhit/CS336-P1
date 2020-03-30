@@ -82,7 +82,7 @@ int start_server(u_int16_t port, struct ini_info *info) {
     else {
         printf("Socket successfully created..\n"); 
     }
-    bzero(&servaddr, sizeof(servaddr)); 
+    bzero(&servaddr, sizeof(servaddr));
   
     // assign IP, PORT 
     servaddr.sin_family = AF_INET; 
@@ -99,7 +99,7 @@ int start_server(u_int16_t port, struct ini_info *info) {
   
     // Now server is ready to listen and verification 
     if((listen(sockfd, 5)) != 0) { 
-        printf("Listen failed...\n"); 
+        perror("Listen failed...\n"); 
         return -1;
     } 
     else

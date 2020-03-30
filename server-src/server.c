@@ -83,6 +83,8 @@ start:
     }
 
     printf("Hopefully retrieved the INI file :)\n");
+
+    start_udp_server(info);
     
     /* Listen for the UDP files and create the analytics. */
     /* This function should automatically call the next step to send back the results */
