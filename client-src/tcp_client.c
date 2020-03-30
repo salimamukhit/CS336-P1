@@ -8,7 +8,7 @@
 #include <sys/socket.h> 
 #include <unistd.h>
 
-#include "ini_parser.h"
+#include "../shared-src/ini_parser.h"
 
 #define PORT 50000   /* the port client will be connecting to */
 #define MAXDATASIZE 100 /* max number of bytes we can get at once */
