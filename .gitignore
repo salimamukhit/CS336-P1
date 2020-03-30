@@ -14,7 +14,11 @@ tcp_client
 server
 logger
 
+received_config.ini
+received.ini
+
 recieved_config.ini
+recieved.ini
 
 # Ignore everything in the ./bin folder
 bin*

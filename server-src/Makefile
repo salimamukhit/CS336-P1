@@ -27,4 +27,4 @@ next_token.o: ../shared-src/next_token.c ../shared-src/next_token.h
 ini_parser.o: ../shared-src/ini_parser.c ../shared-src/ini_parser.h
 
 clean:
-	$(RM) $(TARGET) $(obj) vgcore.* ../shared-src/ini_parser.o ../shared-src/next_token.o
+	$(RM) $(TARGET) $(obj) vgcore.* ../shared-src/ini_parser.o ../shared-src/next_token.o received.ini recieved.ini

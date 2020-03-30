@@ -4,16 +4,21 @@
 
 #include "tcp_server.h"
 #include "udp_server.h"
-#include "logger.h"
+#include "../shared-src/ini_parser.h"
+#include "../shared-src/logger.h"
 
 #define RED_CODE "\033[31m"
 #define GREEN_CODE "\033[32m"
 #define BLUE_CODE "\033[34m"
 #define RESET_CODE "\033[0m"
+
 #define EMPEMERAL_START 49152
 #define PORT_MAX 65535
-#define CONFIG_STEP 0
+#define DEFAULT_PORT 50000
+
 #define UDP_STEP 1
+#define INI_NAME "received.ini"
+
 
 /**
  * @brief Starts the server and handles the transitioning between the TCP -> UDP -> TCP steps
@@ -23,7 +28,11 @@
  * @return int success for failure
  */
 int main(int argc, char *argv[]) {
-    int port = 50000;
+    unsigned short int packet_num;
+    int port = DEFAULT_PORT;
+    /* Prepare the INI struct */
+    struct ini_info *info = calloc(1, sizeof(struct ini_info));
+    strcpy(info->file_name, INI_NAME);
 
     if(argc > 2) {
         fprintf(stderr, "Too many arguments!\n");
@@ -63,10 +72,16 @@ int main(int argc, char *argv[]) {
 
 start:
     /* Listen for the config file and if there is error don't continue */ /* Specify step number 0 as well */
-    if(start_server((u_int16_t) port, CONFIG_STEP) < 0) {
+    if(start_server((u_int16_t) port, info) < 0) {
         perror("Something happend in the TCP connection for retriving the .INI");
         exit(EXIT_FAILURE);
     }
+    if(parse_ini(info) != 0) {
+        perror("Couldn't parse the ini file!\n");
+    } else {
+        printf("INI info successfully retrieved!\n");
+    }
+
     printf("Hopefully retrieved the INI file :)\n");
     
     /* Listen for the UDP files and create the analytics. */
@@ -74,5 +89,6 @@ start:
     // TODO create a UDP server...
 
     
+    free(info);
     return 0;
 }

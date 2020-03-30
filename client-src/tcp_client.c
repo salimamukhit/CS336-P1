@@ -9,9 +9,11 @@
 #include <unistd.h>
 
 #include "../shared-src/ini_parser.h"
+#include "../shared-src/logger.h"
 
 #define PORT 50000   /* the port client will be connecting to */
 #define MAXDATASIZE 100 /* max number of bytes we can get at once */
+#define CONFIGNAME "config.ini"
 
 // Declare struct prototype for struct ini_info
 //struct ini_info;
@@ -37,14 +39,23 @@ int send_config(struct ini_info *info) {
         perror("connect");
         exit(1);
     } else {
-        printf("Connection success");
+        printf("Connection success\n");
     }
+    char line_arr[256] = { 0 };
+    FILE* fp = fopen(CONFIGNAME, "r");
     while(1) {
-        if(send(sockfd, "Hello, world!\n", 14, 0) == -1){
-            perror("send");
-            exit (1);
+        while(fgets(line_arr, 256, fp) != NULL) {
+            LOG("LINE: %s", line_arr);
+            if(send(sockfd, line_arr, 256, 0) == -1) {
+                perror("send");
+                exit(EXIT_FAILURE);
+            }
         }
         printf("After the send function \n");
+        if(send(sockfd, "EOF", 30, 0) == -1) {
+            perror("EOF");
+            exit(EXIT_FAILURE);
+        }
 
         if((numbytes=recv(sockfd, buf, MAXDATASIZE, 0)) == -1) {
             perror("recv");

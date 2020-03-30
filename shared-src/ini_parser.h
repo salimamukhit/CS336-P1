@@ -39,11 +39,21 @@ struct ini_info {
 };
 
 /**
+ * @brief Returns the NAME=VALUE pair from the provided line.
+ * 
+ * @param line the provided line
+ * @param name a zeroed out array in which to put the name
+ * @param value a zeroed out array in which to put the value
+ * @return char 
+ */
+int extractor(char* line, char name[], char value[]);
+
+/**
  * @brief Parses configuration file and passes all the parameters where necessary.
  * @param parsed_info is a pointer to the information to be distributed
- * @return int returns ini_info type information if parsing was successful, NULL otherwise
+ * @return 0 for success, -1 for failure
  */
-struct ini_info* parse_ini(struct ini_info *parsed_info);
+int parse_ini(struct ini_info *parsed_info);
 
 /**
  * @brief Returns the NAME=VALUE pair from the provided line.

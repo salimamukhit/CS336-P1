@@ -10,12 +10,12 @@
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/udp.h>
-#include <arpa/inet.h>        
-#include <sys/ioctl.h>        
-#include <bits/ioctls.h>      
-#include <net/if.h>           
-#include <linux/if_ether.h>   
-#include <linux/if_packet.h>  
+#include <arpa/inet.h>
+#include <sys/ioctl.h>
+#include <bits/ioctls.h>
+#include <net/if.h>
+#include <linux/if_ether.h>
+#include <linux/if_packet.h>
 #include <net/ethernet.h>
 
 #include "ini_parser.h"
@@ -51,12 +51,12 @@ int extractor(char* line, char name[], char value[]) {
  * @param parsed_info is a pointer to the information to be distributed
  * @return int returns ini_info type information if parsing was successful, NULL otherwise
  */
-struct ini_info* parse_ini(struct ini_info *parsed_info) {
+int parse_ini(struct ini_info *parsed_info) {
     LOG("file_name: \"%s\"\n", parsed_info->file_name);
     FILE* fp = fopen(parsed_info->file_name, "r");
     LOG("FILE*: %p\n", fp);
     if(fp == NULL) {
-        return NULL;
+        return -1;
     }
     
     char line_arr[256] = { 0 };
@@ -68,7 +68,7 @@ struct ini_info* parse_ini(struct ini_info *parsed_info) {
         char value[128] = { 0 };
         char name[128] = { 0 };
 
-        if(extractor(line, name, value) == -1) return NULL;
+        if(extractor(line, name, value) == -1) return -1;
         
         // BUG is that line gets used up by next token
         if(strncmp(name, "ServerIP", 255) == 0) {
@@ -102,8 +102,8 @@ struct ini_info* parse_ini(struct ini_info *parsed_info) {
             parsed_info->packet_ttl = (unsigned short int)atoi(value);
         } 
         else {
-            return NULL;
+            return -1;
         }
     }
-    return parsed_info;
+    return 0;
 }

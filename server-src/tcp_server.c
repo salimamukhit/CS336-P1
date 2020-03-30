@@ -7,6 +7,7 @@
 #include "ini_parser.h"
 #include "next_token.h"
 #include "tcp_server.h"
+#include "../shared-src/logger.h"
 
 #define MAX_CONFIG_SIZE 4096
 
@@ -44,17 +45,34 @@ int retrieve_config(int socket_fd) {
     return 0;
 }
 
+int write_file(char buf[], char *file_name) {
+    FILE *ini;
+    ini = fopen(file_name, "w");
+
+    if(ini == NULL) {
+        fprintf(stderr, "Can't open output file %s!\n", file_name);
+        return -1;
+    }
+
+    int fd = fileno(ini);
+    write(fd, buf, strnlen(buf, 8095));
+    close(fd);
+    return 0;
+}
+
 /**
- * @brief Listens on specified port for a incomming connection and sends 
+ * @brief Listens on specified port for a incomming connection and sends a 
+ *        confimation back to the client.
  * 
  * @param port 
  * @return int 
  */
-int start_server(u_int16_t port, int step_num) {
+int start_server(u_int16_t port, struct ini_info *info) {
     int sockfd, connfd;
     unsigned int len; 
     struct sockaddr_in servaddr, cli; 
-  
+    printf("Note: The INI can be at max 255 lines long!\n");
+
     // socket create and verification 
     sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); 
     if(sockfd == -1) {
@@ -99,12 +117,38 @@ int start_server(u_int16_t port, int step_num) {
     
 
     // Read client data:
-    char read_buffer[8096] = { 0 };
-    read(connfd, read_buffer, 8096);
-    printf("Client says: %s\n", read_buffer);
+    char read_buf[8096] = { 0 };
+    for(int i = 0; i < 256; i++) {
+        char temp_buf[256] = { 0 };
+        read(connfd, temp_buf, 256);
+        if(strcmp("EOF", temp_buf) == 0) break;
+
+        strncat(read_buf, temp_buf, 255);
+        LOG("Client says: %s", temp_buf);
+    }
+    LOG("File Contents:\n%s\n", read_buf);
+
+    char response_buf[256] = { 0 };
+
+    // Write out ini to file
+    if(write_file(read_buf, info->file_name) == -1) {
+        strncpy(response_buf, "Failed to write file...", 255);
+        write(connfd, response_buf, strlen(response_buf));
+        close(sockfd);
+        return -1;
+    }
+    write_file(read_buf, info->file_name);
+
+    // Parse the INI
+    if(parse_ini(info) == -1) {
+        strncpy(response_buf, "Failed to parse the INI...", 255);
+        write(connfd, response_buf, strlen(response_buf));
+        close(sockfd);
+        return -1;
+    }
   
     // Function for chatting between client and server
-    char *response_buf = "Hi there bruh!";
+    strcpy(response_buf, "Received the INI successfully");
     write(connfd, response_buf, strlen(response_buf));
   
     // After chatting close the socket 

@@ -19,6 +19,8 @@
 #include <linux/if_packet.h>  
 #include <net/ethernet.h>
 
+#include "ini_parser.h"
+
 /**
 * @file Handles all TCP communications for the server.
 */ 
@@ -27,6 +29,6 @@
 #define _TCP_SERVER_H_
 
 int retrieve_config(int socket_fd);
-int start_server(u_int16_t port, int step_num);
+int start_server(u_int16_t port, struct ini_info *info);
 
 #endif
