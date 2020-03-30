@@ -22,7 +22,14 @@
 #define _INI_PARSER_H_
 
 #include <sys/types.h>
-#include "udp_client.h"
+
+// UDP header's structure
+struct udpheader {
+    unsigned short int udph_srcport;
+    unsigned short int udph_destport;
+    unsigned short int udph_len;
+    unsigned short int udph_chksum;
+};
 
 /* struct with info from ini to be returned */
 struct ini_info {

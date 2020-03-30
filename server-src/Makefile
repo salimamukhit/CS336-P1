@@ -1,15 +1,14 @@
 # Set the following to '0' to disable log messages:
 LOGGER ?= 1
 
-TARGET=client server
+TARGET=server
 CC=gcc
-CFLAGS += -g -Wall -lm -fPIC -DLOGGER=$(LOGGER) -lreadline
+CFLAGS += -g -Wall -lm -fPIC -DLOGGER=$(LOGGER)
 
 # Source C files
 globalsrc= ini_parser.c next_token.c
 serversrc= server.c tcp_server.c udp_server.c
-clientsrc= client.c tcp_client.c udp_client.c
-src=$(serversrc) $(clientsrc) $(globalsrc)
+src=$(serversrc) $(globalsrc)
 
 obj=$(src:.c=.o)
 
@@ -17,25 +16,12 @@ $(TARGET): $(obj)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -o $@
 
 # Individual dependencies --
-server.o: server.c tcp_server.h udp_server.h tcp_client.h udp_client.h logger.h next_token.h ini_parser.h
+server.o: server.c tcp_server.h udp_server.h logger.h next_token.h ini_parser.h
 tcp_server.o: tcp_server.c tcp_server.h logger.h next_token.h ini_parser.h
 udp_server.o: udp_server.c udp_server.h logger.h
-
-client.o: client.c tcp_client.h udp_client.h logger.h next_token.h ini_parser.h
-tcp_client.o: tcp_client.c tcp_client.h logger.h
-udp_client.o: udp_client.c udp_client.h logger.h
 
 next_token.o: next_token.c next_token.h
 ini_parser.o: ini_parser.c ini_parser.h
 
 clean:
 	$(RM) $(TARGET) $(obj) vgcore.*
-
-# Old compilation method...
-
-#normal: $(TARGET)
-
-#client: client.c
-#	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -o client
-#server: server.c
-#	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -o server
