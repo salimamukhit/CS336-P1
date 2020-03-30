@@ -22,7 +22,7 @@
 #define _INI_PARSER_H_
 
 #include <sys/types.h>
-#include "udp_client.h"
+#include "../client-src/udp_client.h"
 
 /* struct with info from ini to be returned */
 struct ini_info {

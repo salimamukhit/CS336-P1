@@ -3,10 +3,10 @@ LOGGER ?= 1
 
 TARGET=server
 CC=gcc
-CFLAGS += -g -Wall -lm -fPIC -DLOGGER=$(LOGGER)
+CFLAGS += -g -Wall -I "../shared-src/" -lm -fPIC -DLOGGER=$(LOGGER)
 
 # Source C files
-globalsrc= ini_parser.c next_token.c
+globalsrc= ../shared-src/ini_parser.c ../shared-src/next_token.c
 serversrc= server.c tcp_server.c udp_server.c
 src=$(serversrc) $(globalsrc)
 
@@ -27,4 +27,4 @@ next_token.o: ../shared-src/next_token.c ../shared-src/next_token.h
 ini_parser.o: ../shared-src/ini_parser.c ../shared-src/ini_parser.h
 
 clean:
-	$(RM) $(TARGET) $(obj) vgcore.*
+	$(RM) $(TARGET) $(obj) vgcore.* ../shared-src/ini_parser.o ../shared-src/next_token.o
