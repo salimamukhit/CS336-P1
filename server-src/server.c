@@ -23,6 +23,8 @@
  * @return int success for failure
  */
 int main(int argc, char *argv[]) {
+    int port = 50000;
+
     if(argc > 2) {
         fprintf(stderr, "Too many arguments!\n");
         exit(EXIT_FAILURE);
@@ -44,7 +46,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    int port = atoi(argv[1]);
+    port = atoi(argv[1]);
 
     if(port < 1) {
         fprintf(stderr, "C'mon you can't have a negative port! Please choose one in the range 49152 to 65535\n");
@@ -56,7 +58,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Port is not in the valid range! Please choose on in the range 49152 to 65535\n");
     }
 
-    printf("Configured Port:  %d", port);
+    printf("Configured Port:  %d\n", port);
 
 
 start:

@@ -99,8 +99,8 @@ int start_server(u_int16_t port, int step_num) {
     
 
     // Read client data:
-    char read_buffer[1024] = { 0 };
-    read(connfd, read_buffer, 1024);
+    char read_buffer[8096] = { 0 };
+    read(connfd, read_buffer, 8096);
     printf("Client says: %s\n", read_buffer);
   
     // Function for chatting between client and server

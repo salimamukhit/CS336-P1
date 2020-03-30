@@ -68,19 +68,10 @@ struct ini_info* parse_ini(struct ini_info *parsed_info) {
         char value[128] = { 0 };
         char name[128] = { 0 };
 
-        LOG("LINE:  %s\n", line);
-
         if(extractor(line, name, value) == -1) return NULL;
-
-        LOG("Name2: \"%s\"\n", name);
-        LOG("Value2: \"%s\"\n", value);
-
-
-        LOG("COMP: %d\n\n", strncmp(name, "ServerIP", 255));
         
         // BUG is that line gets used up by next token
         if(strncmp(name, "ServerIP", 255) == 0) {
-            LOGP("Server IP!!!!\n");
             inet_pton(AF_INET, value, &(parsed_info->server_ip));
         } 
         else if(strncmp(name, "SourceUDP", 255) == 0) {
