@@ -7,6 +7,6 @@
 
 #include "ini_parser.h"
 
-int send_config(int argc, char *argv[], struct ini_info *info);
+int send_config(struct ini_info *info);
 
 #endif

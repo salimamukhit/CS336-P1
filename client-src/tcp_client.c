@@ -16,7 +16,7 @@
 // Declare struct prototype for struct ini_info
 //struct ini_info;
 
-int send_config(int argc, char *argv[], struct ini_info *info) {
+int send_config(struct ini_info *info) {
     int sockfd, numbytes;  
     char buf[MAXDATASIZE];
     struct hostent *he;
@@ -28,7 +28,7 @@ int send_config(int argc, char *argv[], struct ini_info *info) {
     }
 
     their_addr.sin_family = AF_INET;      /* host byte order */
-    their_addr.sin_port = htons(info->client_port);    /* short, network byte order */
+    their_addr.sin_port = htons(info->server_port);    /* short, network byte order */
     their_addr.sin_addr = info->server_ip;
     bzero(&(their_addr.sin_zero), 8);     /* zero the rest of the struct */
 

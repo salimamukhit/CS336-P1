@@ -87,7 +87,7 @@ struct ini_info* parse_ini(struct ini_info *parsed_info) {
             parsed_info->tail_port = (unsigned short int)atoi(value);
         } 
         else if(strncmp(name, "PortNumberTCP", 255) == 0) {
-            parsed_info->client_port = (unsigned short int)atoi(value);
+            parsed_info->server_port = (unsigned short int)atoi(value);
         } 
         else if(strncmp(name, "PayloadSizeUDP", 255) == 0) {
             parsed_info->payload_size = (unsigned short int)atoi(value);

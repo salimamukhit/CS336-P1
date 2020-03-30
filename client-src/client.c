@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
     }
     printf("Successfully parsed INI file\n");
 
-    send_config(argc, argv, info);
+    send_config(info);
 
     /* Filling our data with info from retrieved ini struct */
     /* Information needed for a client: all of the fields */
