@@ -4,10 +4,11 @@
 #include <string.h>
 #include <errno.h>
 
-#include "ini_parser.h"
-#include "next_token.h"
+#include "../shared-src/ini_parser.h"
+#include "../shared-src/next_token.h"
 #include "tcp_server.h"
 #include "../shared-src/logger.h"
+#include "../shared-src/structs.h"
 
 #define MAX_CONFIG_SIZE 4096
 

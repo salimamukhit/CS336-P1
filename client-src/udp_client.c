@@ -8,40 +8,11 @@
 #include <netinet/udp.h>
 #include <arpa/inet.h>
 
+#include "../shared-src/structs.h"
+
 // The packet length
 #define PCKT_LEN 8192
 #define MAX 1024
-
-// Can create separate header file (.h) for all headers' structure
-// The IP header's structure
-struct ipheader {
-    unsigned char iph_ihl: 5, iph_ver: 4;
-    unsigned char iph_tos;
-    unsigned short int iph_len;
-    unsigned short int iph_ident;
-    unsigned char iph_flag;
-    unsigned short int iph_offset;
-    unsigned char iph_ttl;
-    unsigned char iph_protocol;
-    unsigned short int iph_chksum;
-    unsigned int iph_sourceip;
-    unsigned int iph_destip;
-};
-
-// UDP header's structure
-struct udpheader {
-    unsigned short int udph_srcport;
-    unsigned short int udph_destport;
-    unsigned short int udph_len;
-    unsigned short int udph_chksum;
-};
-
-// UDP packet's structure
-struct udppacket {
-    struct ipheader iphdr;
-    struct udpheader udphdr;
-    char data[];
-};
 
 // total udp header length: 8 bytes (=64 bits)
 // Function for checksum calculation. From the RFC,
@@ -60,107 +31,94 @@ unsigned short csum(unsigned short *buf, int nwords) {
     return (unsigned short)(~sum);
 }
 
-// Source IP, source port, target IP, target port from the command line arguments
-int udp_train(int argc, char * argv[]) {
-    int sd;
+int udp_train(struct ini_info* info) {
+    printf("We got to udp_train()!\n");
+    int sockfd;
+
     // No data/payload just datagram
     char buffer[PCKT_LEN];
+
+    char data[info->payload_size];
+
     // Our own headers' structures
     struct ipheader *ip = (struct ipheader *) buffer;
     struct udpheader *udp = (struct udpheader *)(buffer + sizeof(struct ipheader));
+
 
     // Source and destination addresses: IP and port
     struct sockaddr_in source_socket_in, dest_socket_in;
     int one = 1;
     const int *val = &one;
+
     memset(buffer, 0, PCKT_LEN);
 
-    if(argc != 4){
-        printf("- Invalid parameters!!!\n");
-        printf("- Usage %s <source hostname/IP> <source port> <target hostname/IP> <target port>\n", argv[0]);
-        exit(-1);
-    }
-
     // Create a raw socket with UDP protocol
-    sd = socket(PF_INET, SOCK_RAW, IPPROTO_UDP);
-    if(sd < 0){
-
+    sockfd = socket(PF_INET, SOCK_RAW, IPPROTO_UDP);
+    if(sockfd < 0){
         perror("socket() error");
-
-        // If something wrong just exit
-
         exit(-1);
-
     } else {
         printf("socket() - Using SOCK_RAW socket and UDP protocol is OK.\n");
     }
 
-    // The source is redundant, may be used later if needed
-    // The address family
+    // Address families 
     source_socket_in.sin_family = AF_INET;
     dest_socket_in.sin_family = AF_INET;
 
     // Port numbers
-    source_socket_in.sin_port = htons(atoi(argv[2]));
-    dest_socket_in.sin_port = htons(atoi(argv[4]));
+    source_socket_in.sin_port = htons(info->train_udp.udph_srcport);
+    dest_socket_in.sin_port = htons(info->train_udp.udph_destport);
 
     // IP addresses
-    source_socket_in.sin_addr.s_addr = inet_addr(argv[1]);
-    dest_socket_in.sin_addr.s_addr = inet_addr(argv[3]);
+    source_socket_in.sin_addr.s_addr = inet_addr("127.0.0.1");
+    dest_socket_in.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     // Fabricate the IP header or we can use the
     // standard header structures but assign our own values.
     ip->iph_ihl = 5;
     ip->iph_ver = 4;
     ip->iph_tos = 16; // Low delay
-    ip->iph_len = sizeof(struct ipheader) + sizeof(struct udpheader);
-    ip->iph_ident = htons(54321);
-    ip->iph_ttl = 64; // hops
+    ip->iph_len = sizeof(struct ipheader) + sizeof(struct udpheader) + sizeof(data);
+    ip->iph_ident = htons(info->server_port);
+    ip->iph_ttl = 1; // hops
     ip->iph_protocol = 17; // UDP
 
     // Source IP address, can use spoofed address here!!!
-    ip->iph_sourceip = inet_addr(argv[1]);
+    ip->iph_sourceip = inet_addr("127.0.0.1");
 
     // The destination IP address
-    ip->iph_destip = inet_addr(argv[3]);
+    ip->iph_destip = inet_addr("127.0.0.1");
 
     // Fabricate the UDP header. Source port number, redundant
-    udp->udph_srcport = htons(atoi(argv[2]));
+    udp->udph_srcport = htons(info->train_udp.udph_srcport);
 
     // Destination port number
-    udp->udph_destport = htons(atoi(argv[4]));
+    udp->udph_destport = htons(info->train_udp.udph_destport);
     udp->udph_len = htons(sizeof(struct udpheader));
 
     // Calculate the checksum for integrity
     ip->iph_chksum = csum((unsigned short *) buffer, sizeof(struct ipheader) + sizeof(struct udpheader));
 
     // Inform the kernel do not fill up the packet structure. we will build our own...
-    if(setsockopt(sd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0) {
+    if(setsockopt(sockfd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0) {
         perror("setsockopt() error");
         exit(-1);
     } else {
         printf("setsockopt() is OK.\n");
     }
-
-    // Send loop, send for every 2 second for 100 count
-
-    printf("Trying...\n");
     printf("Using raw socket and UDP protocol\n");
-    printf("Using Source IP: %s port: %u, Target IP: %s port: %u.\n", argv[1], atoi(argv[2]), argv[3], atoi(argv[4]));
-
-    int count;
-    for(count = 1; count <= 20; count++) {
-
-        // Verify
-        if(sendto(sd, buffer, ip->iph_len, 0, (struct sockaddr *) & source_socket_in, sizeof(source_socket_in)) < 0) {
-            perror("sendto() error");
-            exit(-1);
-        } else {
-            printf("Count #%u - sendto() is OK.\n", count);
-            sleep(2);
-        }
+    //int count;
+    // Verify
+    char buff[] = "Hello World";
+    if(sendto(sockfd, buff, ip->iph_len, 0, (struct sockaddr *) & source_socket_in, sizeof(source_socket_in)) < 0) {
+        perror("sendto() error");
+        exit(-1);
+    } else {
+        printf("sendto() is OK.\n");
+        sleep(2);
     }
-    close(sd);
+    
+    close(sockfd);
 
     return 0;
 }

@@ -10,6 +10,7 @@
 
 #include "../shared-src/ini_parser.h"
 #include "../shared-src/logger.h"
+#include "../shared-src/structs.h"
 
 #define PORT 50000   /* the port client will be connecting to */
 #define MAXDATASIZE 100 /* max number of bytes we can get at once */
@@ -65,6 +66,7 @@ int send_config(struct ini_info *info) {
             buf[numbytes] = '\0';
 
             printf("Received in pid=%d, text=: %s \n",getpid(), buf);
+            break;
         sleep(1);
     }
 

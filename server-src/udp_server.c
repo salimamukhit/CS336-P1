@@ -7,22 +7,26 @@
 #include <sys/socket.h>
 
 #include "../shared-src/ini_parser.h"
+#include "../shared-src/structs.h"
 #include "../shared-src/logger.h"
 
 int start_udp_server(struct ini_info *info) {
     char buf[8192] = { 0 };
     // Setup structures from our INI
-    struct sockaddr_in servaddr;
-    struct sockaddr_in cliaddr;
-    bzero(&servaddr, sizeof(servaddr));
+    struct sockaddr_in recaddr; // Receiver's address, i.e. udp server
+    struct sockaddr_in sendaddr; // Sender's address, i.e. udp client
+    bzero(&recaddr, sizeof(recaddr));
+    bzero(&sendaddr, sizeof(sendaddr));
 
-    servaddr.sin_family = AF_INET; 
-    servaddr.sin_addr = info->server_ip;
-    servaddr.sin_port = htons(info->server_port);
+    recaddr.sin_family = AF_INET; 
+    recaddr.sin_addr = info->server_ip;
+    recaddr.sin_port = info->train_udp.udph_destport;
 
-    cliaddr.sin_family = AF_INET;
-    cliaddr.sin_addr = info->server_ip;
-    cliaddr.sin_port = htons(info->server_port);
+    sendaddr.sin_family = AF_INET;
+    sendaddr.sin_addr = info->server_ip;
+    sendaddr.sin_port = info->train_udp.udph_srcport;
+
+    printf("Sender port: %d Receiver port: %d\n", sendaddr.sin_port, recaddr.sin_port);
 
     int sockfd;
 
@@ -33,18 +37,23 @@ int start_udp_server(struct ini_info *info) {
         return -1;
     }
 
-    if(bind(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr)) != 0) {
+    if(bind(sockfd, (struct sockaddr*) &recaddr, (socklen_t) sizeof(recaddr)) != 0) {
         perror("Bind");
         return -1;
     }
 
     LOGP("No errors so far!\n");
+    
+    recvfrom(sockfd, &buf, 8192, 0, &sendaddr, sizeof(sendaddr));
+    LOG("Received %s\n", buf);
+    
+    sleep(3);
+    /*for(int i=0; i<info->packet_num; i++) {
+        recvfrom(sockfd, &buf, 8192, 0, &cliaddr.sin_addr, sizeof(cliaddr));
+        LOG("Received %s\n", buf);
+    }*/
 
-    if(listen(sockfd, info->packet_num) != 0) {
-        perror("Listen");
-        return -1;
-    } else {
-        printf("Listening was successful!\n");
-    }
+    close(sockfd);
+
     return 0;
 }

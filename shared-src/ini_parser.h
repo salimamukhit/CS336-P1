@@ -13,6 +13,9 @@
 #include <linux/if_ether.h>   
 #include <linux/if_packet.h>  
 #include <net/ethernet.h>
+#include <sys/types.h>
+
+#include "structs.h"
 
 /**
 * @file Parses a INI file
@@ -21,22 +24,9 @@
 #ifndef _INI_PARSER_H_
 #define _INI_PARSER_H_
 
-#include <sys/types.h>
-#include "../client-src/udp_client.h"
+//#include "../client-src/udp_client.h"
 
 /* struct with info from ini to be returned */
-struct ini_info {
-    char file_name[1024];
-    struct in_addr server_ip;
-    struct udpheader train_udp;
-    unsigned short head_port;
-    unsigned short tail_port;
-    unsigned short server_port;
-    unsigned short int payload_size;
-    time_t meas_time;
-    unsigned short int packet_num;
-    unsigned short int packet_ttl;
-};
 
 /**
  * @brief Returns the NAME=VALUE pair from the provided line.
@@ -54,14 +44,5 @@ int extractor(char* line, char name[], char value[]);
  * @return 0 for success, -1 for failure
  */
 int parse_ini(struct ini_info *parsed_info);
-
-/**
- * @brief Returns the NAME=VALUE pair from the provided line.
- * 
- * @param line the provided line
- * @param var_name name that we are looking for
- * @return char 
- */
-char returnValue(char* line, char var_name[]);
 
 #endif

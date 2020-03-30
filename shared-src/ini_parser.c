@@ -21,6 +21,7 @@
 #include "ini_parser.h"
 #include "next_token.h"
 #include "logger.h"
+#include "structs.h"
 
 /**
  * @brief Returns the NAME=VALUE pair from the provided line.

@@ -6,6 +6,7 @@
 #include "udp_server.h"
 #include "../shared-src/ini_parser.h"
 #include "../shared-src/logger.h"
+#include "../shared-src/structs.h"
 
 #define RED_CODE "\033[31m"
 #define GREEN_CODE "\033[32m"
@@ -28,7 +29,6 @@
  * @return int success for failure
  */
 int main(int argc, char *argv[]) {
-    unsigned short int packet_num;
     int port = DEFAULT_PORT;
     /* Prepare the INI struct */
     struct ini_info *info = calloc(1, sizeof(struct ini_info));
@@ -84,7 +84,10 @@ start:
 
     printf("Hopefully retrieved the INI file :)\n");
 
-    start_udp_server(info);
+    if(start_udp_server(info) < 0) {
+        perror("UDP Server");
+        exit(EXIT_FAILURE);
+    }
     
     /* Listen for the UDP files and create the analytics. */
     /* This function should automatically call the next step to send back the results */

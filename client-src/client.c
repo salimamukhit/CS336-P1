@@ -55,6 +55,12 @@ int main(int argc, char* argv[]) {
 
     send_config(info);
 
+    if(udp_train(info) == -1) {
+        perror("UDP Server");
+    } else {
+        LOGP("UDP Server successful");
+    }
+
     /* Filling our data with info from retrieved ini struct */
     /* Information needed for a client: all of the fields */
 
