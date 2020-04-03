@@ -44,7 +44,7 @@ void fillTrain(char** train, unsigned short int num, unsigned int size, int type
 int udp_train(struct ini_info* info) {
     printf("UDP client started\n");
     printf("The port is: %d\n", htons(PORT));
-
+    printf("Inter-measurement time: %ld\n", info->meas_time);
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     char *message = "Hello Server!";
     struct sockaddr_in servaddr;
@@ -62,14 +62,14 @@ int udp_train(struct ini_info* info) {
     servaddr.sin_addr.s_addr = info->server_ip.s_addr; //INADDR_ANY;
     printf("Address is %d\n", info->server_ip.s_addr);
 
-    sleep(1);
+    sleep(1); //giving server some time to finish binding
     sendto(sockfd, (const char *)message, strlen(message), MSG_CONFIRM, 
     (const struct sockaddr *)&servaddr, sizeof(servaddr));
 
     printf("Message was sent: %s\n", message);
 
-    //int packets = info->packet_num;
-    int packets = 2;
+    int packets = info->packet_num;
+    //int packets = 10; //testing
     int size = info->payload_size;
 
     char** low_entropy = calloc(packets, sizeof(char*));
@@ -85,7 +85,7 @@ int udp_train(struct ini_info* info) {
     printf("High entropy packet: %s\n", high_entropy[0]);
 
     for(int i = 0; i < packets; i++) {
-        sleep(1);
+        sleep(0.0001);
         sendto(sockfd, low_entropy[i], size, MSG_CONFIRM, 
         (const struct sockaddr *)&servaddr, sizeof(servaddr));
     }
@@ -93,7 +93,7 @@ int udp_train(struct ini_info* info) {
     sleep(info->meas_time);
 
     for(int i = 0; i < packets; i++) {
-        sleep(1);
+        sleep(0.0001);
         sendto(sockfd, high_entropy[i], size, MSG_CONFIRM, 
         (const struct sockaddr *)&servaddr, sizeof(servaddr));
     }

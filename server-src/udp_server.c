@@ -4,6 +4,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <time.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -54,15 +55,54 @@ int start_udp_server(struct ini_info *info) {
 
     printf("Received data: %s\n", buffer);
 
-    //int packets = info->packet_num;
-    int packets = 2;
+    int packets = info->packet_num;
+    //int packets = 10; //testing
 
-    for(int i = 0; i < packets*2; i++) {
+    int count = 0;
+
+    clock_t low_start, low_end, high_start, high_end;
+    double low_time, high_time;
+
+    n = recvfrom(sockfd, &buffer, sizeof(buffer), MSG_WAITALL, 
+        (struct sockaddr *)&cliaddr, &cliaddr_len);
+    buffer[n] = '\0';
+    count++;
+    printf("Received: %d\n", count);
+    low_start = clock();
+
+    for(int i = 0; i < packets-1; i++) {
         n = recvfrom(sockfd, &buffer, sizeof(buffer), MSG_WAITALL, 
         (struct sockaddr *)&cliaddr, &cliaddr_len);
         buffer[n] = '\0';
-        printf("Received data: %s\n", buffer);
+        count++;
+        printf("Received: %d\n", count);
+        //printf("Received data: %s\n", buffer);
     }
+
+    low_end = clock();
+    low_time = (low_end - low_start) / CLOCKS_PER_SEC;
+    printf("Low entropy arrival time: %lf\n", low_time);
+    printf("low_start, low_end: %ld %ld\n", low_start, low_end);
+
+    n = recvfrom(sockfd, &buffer, sizeof(buffer), MSG_WAITALL, 
+        (struct sockaddr *)&cliaddr, &cliaddr_len);
+    buffer[n] = '\0';
+    count++;
+    printf("Received: %d\n", count);
+    high_start = clock();
+    for(int i = 0; i < packets-1; i++) {
+        n = recvfrom(sockfd, &buffer, sizeof(buffer), MSG_WAITALL, 
+        (struct sockaddr *)&cliaddr, &cliaddr_len);
+        buffer[n] = '\0';
+        count++;
+        printf("Received: %d\n", count);
+        //printf("Received data: %s\n", buffer);
+    }
+
+    high_end = clock();
+    high_time = (high_end - high_start) / CLOCKS_PER_SEC;
+    printf("High entropy arrival time: %lf\n", high_time);
+    printf("high_start, high_end: %ld %ld\n", high_start, high_end);
 
     close(sockfd);
     
