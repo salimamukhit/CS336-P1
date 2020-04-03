@@ -31,6 +31,7 @@ struct udppacket {
 };
 
 struct ini_info {
+    unsigned int size;
     char file_name[1024];
     struct in_addr server_ip;
     struct udpheader train_udp;

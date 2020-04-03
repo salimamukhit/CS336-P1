@@ -85,7 +85,7 @@ int udp_train(struct ini_info* info) {
     printf("High entropy packet: %s\n", high_entropy[0]);
 
     for(int i = 0; i < packets; i++) {
-        sleep(0.0001);
+        sleep(0.01);
         sendto(sockfd, low_entropy[i], size, MSG_CONFIRM, 
         (const struct sockaddr *)&servaddr, sizeof(servaddr));
     }
@@ -93,7 +93,7 @@ int udp_train(struct ini_info* info) {
     sleep(info->meas_time);
 
     for(int i = 0; i < packets; i++) {
-        sleep(0.0001);
+        sleep(0.01);
         sendto(sockfd, high_entropy[i], size, MSG_CONFIRM, 
         (const struct sockaddr *)&servaddr, sizeof(servaddr));
     }

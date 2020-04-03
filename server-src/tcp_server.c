@@ -119,13 +119,13 @@ int start_server(u_int16_t port, struct ini_info *info) {
 
     // Read client data:
     char read_buf[8096] = { 0 };
-    for(int i = 0; i < 256; i++) {
+    while(1) { //for(int i = 0; i < 256; i++) {
         char temp_buf[256] = { 0 };
         read(connfd, temp_buf, 256);
         if(strcmp("EOF", temp_buf) == 0) break;
 
         strncat(read_buf, temp_buf, 255);
-        LOG("Client says: %s", temp_buf);
+        if(temp_buf != NULL && *temp_buf != '\0') LOG("Client says: %s", temp_buf);
     }
     LOG("File Contents:\n%s\n", read_buf);
 
@@ -151,6 +151,7 @@ int start_server(u_int16_t port, struct ini_info *info) {
     // Function for chatting between client and server
     strcpy(response_buf, "Received the INI successfully");
     write(connfd, response_buf, strlen(response_buf));
+    shutdown(connfd, SHUT_WR);
   
     // After chatting close the socket 
     close(sockfd);
