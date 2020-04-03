@@ -9,13 +9,8 @@
 
 #include "../shared-src/structs.h"
 
-// Can create separate header file (.h) for all headers' structure
-// The IP header's structure
+void fillTrain(char** train, unsigned short int num, unsigned int size, int type);
 
-unsigned short csum(unsigned short *buf, int nwords);
-
-
-// Source IP, source port, target IP, target port from the command line arguments
 int udp_train(struct ini_info *info);
 
 #endif

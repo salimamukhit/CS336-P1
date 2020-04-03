@@ -51,15 +51,11 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Failed to parse the INI file!\n");
         return EXIT_FAILURE;
     }
-    printf("Successfully parsed INI file\n");
+    LOGP("Successfully parsed INI file\n");
 
     send_config(info);
 
-    if(udp_train(info) == -1) {
-        perror("UDP Server");
-    } else {
-        LOGP("UDP Server successful");
-    }
+    int i = udp_train(info);
 
     /* Filling our data with info from retrieved ini struct */
     /* Information needed for a client: all of the fields */
