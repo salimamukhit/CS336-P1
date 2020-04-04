@@ -52,6 +52,7 @@ int send_config(struct ini_info *info) {
                 perror("send");
                 exit(EXIT_FAILURE);
             }
+            sleep(0.1);
         }
         printf("After the send function \n");
         if(send(sockfd, "EOF", 30, 0) == -1) {
@@ -64,10 +65,10 @@ int send_config(struct ini_info *info) {
             exit(1);
         }	
 
-            buf[numbytes] = '\0';
+        buf[numbytes] = '\0';
 
-            printf("Received in pid=%d, text=: %s \n",getpid(), buf);
-            break;
+        printf("Received in pid=%d, text=: %s \n",getpid(), buf);
+        break;
         sleep(1);
     }
 
