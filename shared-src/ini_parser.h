@@ -17,16 +17,8 @@
 
 #include "structs.h"
 
-/**
-* @file Parses a INI file
-*/ 
-
 #ifndef _INI_PARSER_H_
 #define _INI_PARSER_H_
-
-//#include "../client-src/udp_client.h"
-
-/* struct with info from ini to be returned */
 
 /**
  * @brief Returns the NAME=VALUE pair from the provided line.

@@ -17,7 +17,7 @@
 
 #define PORT 8080
 
-int start_udp_server(struct ini_info *info) {
+int start_udp_server(struct ini_info *info, double* low_arrival, double* high_arrival) {
     printf("We got to starting the UDP server!\n");
     printf("The port is: %d\n", htons(PORT));
 
@@ -101,10 +101,17 @@ int start_udp_server(struct ini_info *info) {
 
     high_end = clock();
     high_time = (high_end - high_start) / CLOCKS_PER_SEC;
+    *low_arrival = low_time;
+    *high_arrival = high_time;
     printf("High entropy arrival time: %lf\n", high_time);
     printf("high_start, high_end: %ld %ld\n", high_start, high_end);
 
+    // informing the client that server is done with receiving and calculating
+    char* message = "I am done.\n";
+    sendto(sockfd, (const char *)message, strlen(message), 
+    MSG_CONFIRM, (const struct sockaddr *) &cliaddr, cliaddr_len); 
+    printf("Verification message was sent.\n");  
+
     close(sockfd);
-    
     return 0;
 }

@@ -56,6 +56,15 @@ int main(int argc, char* argv[]) {
     send_config(info);
 
     int i = udp_train(info);
+    if(i == 0) {
+        LOGP("UDP Client was successful!\n");
+    }
+    
+    double low_arrival, high_arrival;
+    i = receive_results(info->server_port, info, &low_arrival, &high_arrival);
+    if(i == 0) {
+        LOGP("Results were received successfuly!\n");
+    }
 
     /* Filling our data with info from retrieved ini struct */
     /* Information needed for a client: all of the fields */
@@ -64,6 +73,6 @@ int main(int argc, char* argv[]) {
     // establish UDP communication between a udp client and a server
     // establish TCP communication between a server and tcp client
 
-
+    free(info);
     return EXIT_SUCCESS;
 }

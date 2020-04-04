@@ -84,6 +84,10 @@ int start_server(u_int16_t port, struct ini_info *info) {
         printf("Socket successfully created..\n"); 
     }
     bzero(&servaddr, sizeof(servaddr));
+
+    // Set socket options, make sure kernel doesn't keep it open
+    int true = 1;
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &true, sizeof(int));
   
     // assign IP, PORT 
     servaddr.sin_family = AF_INET; 
@@ -105,16 +109,17 @@ int start_server(u_int16_t port, struct ini_info *info) {
     } 
     else
         printf("Server listening..\n"); 
+
     len = sizeof(cli);
   
     // Accept the data packet from client and verification 
     connfd = accept(sockfd, (struct sockaddr*) &cli, &len); 
     if(connfd < 0) { 
-        printf("server acccept failed...\n"); 
+        printf("server accept failed...\n"); 
         return -1;
     } 
     else
-        printf("server acccept the client...\n");
+        printf("server accept the client...\n");
     
 
     // Read client data:
@@ -153,6 +158,69 @@ int start_server(u_int16_t port, struct ini_info *info) {
     write(connfd, response_buf, strlen(response_buf));
   
     // After chatting close the socket 
+    close(sockfd);
+    return 0;
+}
+
+int send_results(unsigned short int port, double* low_arrival, double *high_arrival) {
+    sleep(2);
+    int sockfd, connfd;
+    unsigned int len; 
+    struct sockaddr_in servaddr, cli;
+
+    printf("Now the TCP server is going to send findings to the client.\n");
+
+    // creation of a socket
+    sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); 
+    if(sockfd == -1) {
+        perror("Socket"); 
+        return -1; 
+    } 
+    else {
+        printf("Socket successfully created..\n"); 
+    }
+    bzero(&servaddr, sizeof(servaddr));
+  
+    // assigning IP and port number
+    servaddr.sin_family = AF_INET; 
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
+    servaddr.sin_port = htons(port+1); 
+  
+    // binding
+    if((bind(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr))) != 0) { 
+        perror("Bind"); 
+        return -1;
+    } 
+    else {
+        printf("Socket successfully binded..\n"); 
+    }
+
+    // listening
+    if((listen(sockfd, 5)) != 0) { 
+        perror("Listen"); 
+        return -1;
+    } 
+    else {
+        printf("Server listening..\n"); 
+    }
+
+    len = sizeof(cli);
+  
+    // accepting the data from the client
+    connfd = accept(sockfd, (struct sockaddr*) &cli, &len); 
+    if(connfd < 0) { 
+        perror("Server accept"); 
+        return -1;
+    } 
+    else {
+        printf("Server accepted the client\n");
+    }
+
+    char response[128];
+    sprintf(response, "%lf %lf", *low_arrival, *high_arrival);
+    write(connfd, response, sizeof(response));
+    printf("Sent the results to the client\n");
+
     close(sockfd);
     return 0;
 }

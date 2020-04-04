@@ -13,7 +13,7 @@
 #ifndef _UDP_SERVER_H_
 #define _UDP_SERVER_H_
 
-int start_udp_server(struct ini_info *info);
+int start_udp_server(struct ini_info *info, double* low_arrival, double* high_arrival);
 
 
 #endif

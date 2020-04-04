@@ -84,13 +84,14 @@ start:
 
     printf("Hopefully retrieved the INI file :)\n");
 
-    start_udp_server(info);
+    double low_arrival, high_arrival;
+    start_udp_server(info, &low_arrival, &high_arrival);
+    send_results(port, &low_arrival, &high_arrival);
     
     /* Listen for the UDP files and create the analytics. */
     /* This function should automatically call the next step to send back the results */
     // TODO create a UDP server...
 
-    
     free(info);
     return 0;
 }

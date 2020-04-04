@@ -36,12 +36,13 @@ int send_config(struct ini_info *info) {
     bzero(&(their_addr.sin_zero), 8);     /* zero the rest of the struct */
 
     printf("Preparing the connection...\n");
-    if(connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1) {
+    while(connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1) {
         perror("connect");
-        exit(1);
-    } else {
-        printf("Connection success\n");
+        sleep(1);
+        printf("Trying again in 1 seconds\n");
     }
+    printf("Connection success\n");
+
     char line_arr[256] = { 0 };
     FILE* fp = fopen(CONFIGNAME, "r");
     while(1) {
@@ -71,7 +72,42 @@ int send_config(struct ini_info *info) {
     }
 
     close(sockfd);
+    return 0;
+}
 
+int receive_results(unsigned short int port, struct ini_info *info, double *low_arrival, double *high_arrival) {
+    int sockfd;
+    int numbytes;
+    struct sockaddr_in servaddr;
+    sleep(3);
+
+     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        perror("Socket");
+        return -1;
+    }
+    printf("Socket creation successful\n");
+
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(port+1);
+    servaddr.sin_addr = info->server_ip;
+    bzero(&(servaddr.sin_zero), 8);
+
+    printf("Connecting to the server\n");
+    if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(struct sockaddr)) == -1) {
+        perror("Connection");
+        return -1;
+    } 
+    printf("Connection was successful\n");
+
+    char results[128];
+    if((numbytes = recv(sockfd, results, sizeof(results), 0)) < 0) {
+        perror("Couldn't receive the results");
+        return -1;
+    }
+    results[numbytes] = '\0';
+    printf("Received results: %s\n", results);
+
+    close(sockfd);
     return 0;
 }
 

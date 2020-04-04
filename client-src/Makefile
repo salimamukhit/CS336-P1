@@ -6,7 +6,7 @@ CC=gcc
 CFLAGS += -g -Wall -I "../shared-src/" -lm -fPIC -DLOGGER=$(LOGGER)
 
 # Source C files
-globalsrc= ../shared-src/ini_parser.c ../shared-src/next_token.c
+globalsrc= ../shared-src/ini_parser.c ../shared-src/next_token.c ../shared-src/msleep.c
 clientsrc= client.c tcp_client.c udp_client.c
 src=$(clientsrc) $(globalsrc)
 
@@ -16,7 +16,7 @@ $(TARGET): $(obj)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -o $@
 
 # Shared headers
-shareheaders= ../shared-src/ini_parser.h ../shared-src/next_token.h ../shared-src/logger.h
+shareheaders= ../shared-src/ini_parser.h ../shared-src/next_token.h ../shared-src/logger.h ../shared-src/msleep.h
 
 # Individual dependencies --
 client.o: client.c tcp_client.h udp_client.h $(shareheaders)

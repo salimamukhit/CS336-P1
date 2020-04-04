@@ -13,6 +13,7 @@
 #include <time.h>
 
 #include "../shared-src/structs.h"
+#include "../shared-src/msleep.h"
 
 #define PORT 8080
 
@@ -85,7 +86,7 @@ int udp_train(struct ini_info* info) {
     printf("High entropy packet: %s\n", high_entropy[0]);
 
     for(int i = 0; i < packets; i++) {
-        sleep(0.0001);
+        msleep(1);
         sendto(sockfd, low_entropy[i], size, MSG_CONFIRM, 
         (const struct sockaddr *)&servaddr, sizeof(servaddr));
     }
@@ -93,7 +94,7 @@ int udp_train(struct ini_info* info) {
     sleep(info->meas_time);
 
     for(int i = 0; i < packets; i++) {
-        sleep(0.0001);
+        msleep(1);
         sendto(sockfd, high_entropy[i], size, MSG_CONFIRM, 
         (const struct sockaddr *)&servaddr, sizeof(servaddr));
     }
@@ -104,6 +105,13 @@ int udp_train(struct ini_info* info) {
     }
     free(low_entropy);
     free(high_entropy);
+
+    char buffer[10];
+
+    // the client is informed that server is done with receiving packets
+    int m = recvfrom(sockfd, buffer, 10, MSG_WAITALL, (struct sockaddr* )&servaddr, sizeof(servaddr));
+    buffer[m] = '\0';
+    printf("Received: %s\n", buffer);
 
     close(sockfd);
     return 0;

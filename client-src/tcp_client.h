@@ -8,5 +8,6 @@
 #include "ini_parser.h"
 
 int send_config(struct ini_info *info);
+int receive_results(unsigned short int port, struct ini_info *info, double *low_arrival, double *high_arrival);
 
 #endif

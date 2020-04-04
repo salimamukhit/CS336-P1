@@ -30,5 +30,6 @@
 
 int retrieve_config(int socket_fd);
 int start_server(u_int16_t port, struct ini_info *info);
+int send_results(unsigned short int port, double* low_arrival, double *high_arrival);
 
 #endif
