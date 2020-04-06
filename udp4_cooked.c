@@ -50,9 +50,7 @@ char *allocate_strmem (int);
 uint8_t *allocate_ustrmem (int);
 int *allocate_intmem (int);
 
-int
-main (int argc, char **argv)
-{
+int main (int argc, char **argv) {
   int i, status, datalen, frame_length, sd, bytes, *ip_flags;
   char *interface, *target, *src_ip, *dst_ip;
   struct ip iphdr;
@@ -318,6 +316,7 @@ udp4_checksum (struct ip iphdr, struct udphdr udphdr, uint8_t *payload, int payl
   ptr = &buf[0];  // ptr points to beginning of buffer buf
 
   // Copy source IP address into buf (32 bits)
+
   memcpy (ptr, &iphdr.ip_src.s_addr, sizeof (iphdr.ip_src.s_addr));
   ptr += sizeof (iphdr.ip_src.s_addr);
   chksumlen += sizeof (iphdr.ip_src.s_addr);

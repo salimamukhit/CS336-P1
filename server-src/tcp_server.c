@@ -202,7 +202,7 @@ int send_results(unsigned short int port, double* low_arrival, double *high_arri
         return -1;
     } 
     else {
-        printf("Server listening..\n"); 
+        printf("Server listening...\n"); 
     }
 
     len = sizeof(cli);
@@ -217,8 +217,15 @@ int send_results(unsigned short int port, double* low_arrival, double *high_arri
         printf("Server accepted the client\n");
     }
 
+    // sending the results to the client
     char response[128];
-    sprintf(response, "%lf %lf", *low_arrival, *high_arrival);
+    double difference = *high_arrival - *low_arrival;
+    if(difference < 100) {
+        sprintf(response, "low entropy time: %lf sec\n high entropy time: %lf sec\n no compression was detected\n", *low_arrival, *high_arrival);
+    } else {
+        sprintf(response, "low entropy time: %lf sec\n high entropy time: %lf sec\n compression was detected\n", *low_arrival, *high_arrival);
+    }
+    
     write(connfd, response, sizeof(response));
     printf("Sent the results to the client\n");
 

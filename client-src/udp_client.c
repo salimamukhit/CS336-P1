@@ -12,17 +12,11 @@
 #include <netinet/in.h>
 #include <time.h>
 
+#include "../shared-src/logger.h"
 #include "../shared-src/structs.h"
 #include "../shared-src/msleep.h"
 
 #define PORT 8080
-
-// total udp header length: 8 bytes (=64 bits)
-// Function for checksum calculation. From the RFC,
-// the checksum algorithm is:
-//  "The checksum field is the 16 bit one's complement of the one's
-//  complement sum of all 16 bit words in the header.  For purposes of
-//  computing the checksum, the value of the checksum field is zero."
 
 void fillTrain(char** train, unsigned short int num, unsigned int size, int type) {
     if(type == 0) {
@@ -44,8 +38,9 @@ void fillTrain(char** train, unsigned short int num, unsigned int size, int type
 
 int udp_train(struct ini_info* info) {
     printf("UDP client started\n");
-    printf("The port is: %d\n", htons(PORT));
-    printf("Inter-measurement time: %ld\n", info->meas_time);
+    LOG("The port is: %d\n", htons(PORT));
+    LOG("Inter-measurement time: %ld\n", info->meas_time);
+
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     char *message = "Hello Server!";
     struct sockaddr_in servaddr;
@@ -63,7 +58,7 @@ int udp_train(struct ini_info* info) {
     servaddr.sin_addr.s_addr = info->server_ip.s_addr; //INADDR_ANY;
     printf("Address is %d\n", info->server_ip.s_addr);
 
-    sleep(1); //giving server some time to finish binding
+    sleep(1); // giving server some time to finish binding
     sendto(sockfd, (const char *)message, strlen(message), MSG_CONFIRM, 
     (const struct sockaddr *)&servaddr, sizeof(servaddr));
 
@@ -111,7 +106,7 @@ int udp_train(struct ini_info* info) {
     // the client is informed that server is done with receiving packets
     int m = recvfrom(sockfd, buffer, 10, MSG_WAITALL, (struct sockaddr* )&servaddr, sizeof(servaddr));
     buffer[m] = '\0';
-    printf("Received: %s\n", buffer);
+    printf("Received message from server: %s\n", buffer);
 
     close(sockfd);
     return 0;
