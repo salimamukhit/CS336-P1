@@ -11,7 +11,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <netinet/ip.h>
 #include <netinet/udp.h>
 #include <netinet/tcp.h>
 #include <linux/if.h>
@@ -24,39 +23,24 @@
 
 #define INTERFACE "wlp7s0"
 #define INI_NAME "config.ini"
-#define TARGET "www.google.com"
 #define MY_IP "127.0.0.1"
+#define TARGET_IP "64.233.163.2" // google's IP
+#define PCKT_LEN 8192
 
-/* 
-Standalone application
-Step 1: Retrieves MAC address of a local machine in order to let packets go through it
-Step 2: Identifies a receiver machine, fills the fields with pseudo data. Chosen IP: google
-Step 3: Creates TCP SYN packets for head and tail
-Step 4: Creates UDP packets for the rest of the packet trains
-Step 5: Sends this data on different ports and starts timer
-Step 6: Receives RST packets
-*/
+/* Checksum functions */
+unsigned short csum(unsigned short *buf, int len);
+
 int main() {
-    struct ini_info* info;
-    char* interface, ip_src, target;
+    // getting the mac address
+    char* interface;
     struct ifreq ifr;
-    uint8_t mac_src[6], mac_dest[6];
-    strcpy(info->file_name, INI_NAME);
-
-    // parsing the ini file
-    if (parse_ini(info) != 0) {
-        printf("Problem with parsing the INI file.\n");
-        return EXIT_FAILURE;
-    }
-    printf("Successfully parsed the ini file.\n");
+    uint8_t mac_src[6];
     
     printf("Starting the standalone compression detection application.\n");
 
-    // setting up the mac address to let packet go through it
     interface = calloc(1, sizeof(INTERFACE));
     strcpy(interface, INTERFACE);
     int sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-    // getting a socket for retrieving mac address
     if (sockfd < 0) {
         perror("Socket");
         return EXIT_FAILURE;
@@ -82,83 +66,102 @@ int main() {
     printf("%02x\n", mac_src[5]);
     free(interface);
 
-    // destination mac address doesn't matter
-    for(int i = 0; i < 6; i++) {
-        mac_dest[i] = 0xff;
+    struct ini_info *info = calloc(1, sizeof(struct ini_info));
+    strcpy(info->file_name, INI_NAME);
+    if(parse_ini(info) != 0) {
+        printf("Problem with INI file\n");
+        exit(-1);
     }
-
-    // create tcp packets for head and tail for both trains
-
-    // create udp packets for high and low entropy trains
-    char** low_train; // low entropy train
-    char** high_train; // high entropy train
-
-    fillTrain(low_train, info->packet_num, info-> payload_size, 0);
-    fillTrain(high_train, info->packet_num, info-> payload_size, 1);
-
-    int udp_packets = info->packet_num - 2; // number of packets sent with UDP, exclude head and tail
-    struct udphdr udp;
-    struct iphdr ip;
-
-    memset(&ip, 0, sizeof(ip));
-    memset(&udp, 0, sizeof(udp));
-
-    strcpy(ip_src, MY_IP);
-    strcpy(target, TARGET);
-
-    // send head and start timer
-    // send packet train
-    for(int i = 0; i < udp_packets; i++) {
-        // send
+    printf("Parsed the ini file\n");
+    // creating tcp head and tail
+    char buffer[PCKT_LEN];
+    struct ipheader *ip = (struct ipheader *) buffer;
+    struct tcpheader *tcp = (struct tcpheader *) (buffer + sizeof(struct ipheader));
+    struct sockaddr_in sin, din;
+    int one = 1;
+    const int *val = &one;
+    memset(buffer, 0, PCKT_LEN);
+    int sd = socket(PF_INET, SOCK_RAW, IPPROTO_TCP);
+    if(sd < 0) {
+        perror("socket() error");
+        exit(-1);
     }
-    // send tail and start timer
-    int sock_r;
-    sock_r = socket(AF_PACKET, SOCK_RAW, ETH_P_ALL);
-    if(sock_r < 0) {
-        perror("Raw socket");
-        return EXIT_FAILURE;
+    printf("socket()-SOCK_RAW and tcp protocol is OK.\n");
+    // The source is redundant, may be used later if needed
+    // Address family
+    sin.sin_family = AF_INET;
+    din.sin_family = AF_INET;
+    // Source port, can be any, modify as needed
+    sin.sin_port = htons(info->server_port);
+    din.sin_port = htons(info->head_port);
+    // Source IP, can be any, modify as needed
+    sin.sin_addr.s_addr = inet_addr("127.0.0.1");
+    din.sin_addr.s_addr = inet_addr("64.233.160.5");
+    // IP structure
+    ip->iph_ihl = 5;
+    ip->iph_ver = 4;
+    ip->iph_tos = 16;
+    ip->iph_len = sizeof(struct ipheader) + sizeof(struct tcpheader);
+    ip->iph_ident = htons(54321);
+    ip->iph_offset = 0;
+    ip->iph_ttl = 64;
+    ip->iph_protocol = 6; // TCP
+    ip->iph_chksum = 0; // Done by kernel
+    // Source IP, modify as needed, spoofed, we accept through command line argument
+    ip->iph_sourceip = inet_addr("127.0.0.1");
+    // Destination IP, modify as needed, but here we accept through command line argument
+    ip->iph_destip = inet_addr("64.233.160.5");
+    // The TCP structure. The source port, spoofed, we accept through the command line
+    tcp->tcph_srcport = htons(info->server_port);
+    // The destination port, we accept through command line
+    tcp->tcph_destport = htons(info->head_port);
+    tcp->tcph_seqnum = htonl(1);
+    tcp->tcph_acknum = 0;
+    tcp->tcph_offset = 5;
+    tcp->tcph_syn = 1;
+    tcp->tcph_ack = 0;
+    tcp->tcph_win = htons(32767);
+    tcp->tcph_chksum = 0; // Done by kernel
+    tcp->tcph_urgptr = 0;
+    // IP checksum calculation
+    ip->iph_chksum = csum((unsigned short *) buffer, (sizeof(struct ipheader) + sizeof(struct tcpheader)));
+    // Inform the kernel do not fill up the headers' structure, we fabricated our own
+    if(setsockopt(sd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0) {
+        perror("setsockopt() error");
+        exit(-1);
     }
-    print("Receiver socket was created");
-
-    unsigned char *buffer = (unsigned char *) malloc(65536); // to receive data
-    memset(buffer, 0, 65536);
-    struct sockaddr saddr;
-    int saddr_len = sizeof(saddr);
-    int rst_count = 0;
-    struct sockaddr_in src, dest;
-
-    while(1) {
-        if(rst_count == 2) {
-            break;
-        }
-        int buflen = recvfrom(sock_r, buffer, 65536, 0, &saddr, (socklen_t*)&saddr_len);
-        if(buflen < 0) {
-            printf("error in reading recvfrom function\n");
-            return -1;
-        }
-        struct ethhdr *eth = (struct ethhdr*)(buffer);
-        if(eth->h_proto == 8) {
-            printf("Received an IP PROTO packet\n");
-            unsigned short iphdrlen;
-            struct iphdr *ip = (struct iphdr*)(buffer + sizeof(struct ethhdr));
-            memset(&src, 0, sizeof(src));
-            src.sin_addr.s_addr = ip->saddr;
-            memset(&dest, 0, sizeof(dest));
-            dest.sin_addr.s_addr = ip->daddr;
-            if(ip->protocol == 6) {
-                printf("There is a TCP packet");
-                iphdrlen = ip->ihl * 4;
-                struct tcphdr *tcp = (struct tcphdr*)(buffer + iphdrlen + sizeof(struct ethhdr));
-                if(tcp->rst == 1) {
-                    if(tcp->source == info->tail_port) {
-                        rst_count++;
-                    } else if(tcp->source == info->head_port) {
-                        rst_count++;
-                    }
-                }
-            }
-        }
+    printf("setsockopt() is OK\n");
+    printf("Sending the head\n");
+    if(sendto(sd, buffer, ip->iph_len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+        perror("sendto() error");
+        exit(-1);
     }
-    // receive info for both head and tail and stop timers
-    // repeat again for high entropy train
-    return EXIT_SUCCESS;
+    printf("Packet was sent\n");
+    sleep(2);
+    tcp->tcph_destport = htons(info->tail_port);
+    din.sin_port = htons(info->tail_port);
+    printf("Sending the tail on port %d from %d\n", htons(info->tail_port), htons(info->server_port));
+    if(sendto(sd, buffer, ip->iph_len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+        perror("sendto() error");
+        exit(-1);
+    }
+    printf("Packet was sent\n");
+    
+        
+    close(sd);
+    free(info);
+    // creating udp packets
+    // sending everything
+    // receiving RST and ICMP packets
+    return 0;
+}
+
+unsigned short csum(unsigned short *buf, int len) {
+        unsigned long sum;
+        for(sum=0; len>0; len--)
+            sum += *buf++;
+        sum = (sum >> 16) + (sum &0xffff);
+        sum += (sum >> 16);
+        return (unsigned short)(~sum);
+
+}

@@ -36,11 +36,15 @@ int send_config(struct ini_info *info) {
     bzero(&(their_addr.sin_zero), 8);     /* zero the rest of the struct */
 
     printf("Preparing the connection...\n");
-    while(connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1) {
+    if(connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1) {
+        perror("connect");
+        return -1;
+    }
+    /* while(connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1) {
         perror("connect");
         sleep(1);
         printf("Trying again in 1 seconds\n");
-    }
+    }*/
     printf("Connection success\n");
 
     char line_arr[256] = { 0 };
@@ -89,10 +93,11 @@ int receive_results(unsigned short int port, struct ini_info *info, double *low_
     printf("Socket creation successful\n");
 
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(port+1);
+    servaddr.sin_port = htons(port);
     servaddr.sin_addr = info->server_ip;
     bzero(&(servaddr.sin_zero), 8);
 
+    sleep(2);
     printf("Connecting to the server\n");
     if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(struct sockaddr)) == -1) {
         perror("Connection");

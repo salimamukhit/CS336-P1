@@ -185,7 +185,7 @@ int send_results(unsigned short int port, double* low_arrival, double *high_arri
     // assigning IP and port number
     servaddr.sin_family = AF_INET; 
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
-    servaddr.sin_port = htons(port+1); 
+    servaddr.sin_port = htons(port); 
   
     // binding
     if((bind(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr))) != 0) { 
