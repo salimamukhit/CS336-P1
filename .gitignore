@@ -13,6 +13,7 @@ udp_client
 tcp_client
 server
 logger
+standalone
 
 received_config.ini
 received.ini
@@ -22,3 +23,9 @@ recieved.ini
 
 # Ignore everything in the ./bin folder
 bin*
+
+# Ignore other stuff
+GPATH
+GRTAGS
+GTAGS
+udp4_cooked.c

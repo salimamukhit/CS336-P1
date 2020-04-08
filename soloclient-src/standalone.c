@@ -22,6 +22,7 @@
 
 #include "create_hdrs.h"
 
+#define _GNU_SOURCE
 //#define INTERFACE "enp4s0" // Erik
 //"wlp7s0" //Salima
 #define INI_NAME "solo_config.ini"
@@ -171,7 +172,7 @@ int main(int argc, char **argv) {
     }
 
     // Send packet.
-    if(sendto(sockfd, packet, IP4_HDRLEN + TCP_HDRLEN, 0, sin, sizeof(struct sockaddr)) < 0)  {
+    if(sendto(sockfd, packet, IP4_HDRLEN + TCP_HDRLEN, 0, (struct sockaddr_in *) sin, sizeof(struct sockaddr)) < 0)  {
         perror("sendto() failed ");
         exit(EXIT_FAILURE);
     }

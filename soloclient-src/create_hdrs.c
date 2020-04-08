@@ -37,32 +37,32 @@
  * @return uint16_t the checksum.
  */
 uint16_t checksum(uint16_t *addr, int len) {
-  int count = len;
-  register uint32_t sum = 0;
-  uint16_t answer = 0;
+    int count = len;
+    register uint32_t sum = 0;
+    uint16_t answer = 0;
 
-  // Sum up 2-byte values until none or only one byte left.
-  while(count > 1) {
-    sum += *(addr++);
-    count -= 2;
-  }
+    // Sum up 2-byte values until none or only one byte left.
+    while(count > 1) {
+        sum += *(addr++);
+        count -= 2;
+    }
 
-  // Add left-over byte, if any.
-  if(count > 0) {
-    sum += *(uint8_t *) addr;
-  }
+    // Add left-over byte, if any.
+    if(count > 0) {
+        sum += *(uint8_t *) addr;
+    }
 
-  // Fold 32-bit sum into 16 bits; we lose information by doing this,
-  // increasing the chances of a collision.
-  // sum = (lower 16 bits) + (upper 16 bits shifted right 16 bits)
-  while(sum >> 16) {
-    sum = (sum & 0xffff) + (sum >> 16);
-  }
+    // Fold 32-bit sum into 16 bits; we lose information by doing this,
+    // increasing the chances of a collision.
+    // sum = (lower 16 bits) + (upper 16 bits shifted right 16 bits)
+    while(sum >> 16) {
+        sum = (sum & 0xffff) + (sum >> 16);
+    }
 
-  // Checksum is one's compliment of sum.
-  answer = ~sum;
+    // Checksum is one's compliment of sum.
+    answer = ~sum;
 
-  return answer;
+    return answer;
 }
 
 // Build IPv4 TCP pseudo-header and call checksum function.
@@ -159,7 +159,7 @@ uint16_t tcp4_checksum(struct ip *iphdr, struct tcphdr *tcphdr) {
  * @param ttl the time to live for the packet.
  * @return int 0 for success and -1 for failure.
  */
-struct ip *create_ipheader(struct ip *iphdr, struct ini_info *info, unsigned int ttl) {
+int create_ipheader(struct ip *iphdr, struct ini_info *info, unsigned int ttl) {
     //struct ip *iphdr = calloc(1, sizeof(struct iphdr));
     int ip_flags[4] = { 0 };
 
@@ -205,7 +205,7 @@ struct ip *create_ipheader(struct ip *iphdr, struct ini_info *info, unsigned int
 
     int status;
     // Source IPv4 address (32 bits)
-    if ((status = inet_pton (AF_INET, info->client_ip, &(iphdr->ip_src))) != 1) {
+    if((status = inet_pton (AF_INET, info->client_ip, &(iphdr->ip_src))) != 1) {
         fprintf(stderr, "inet_pton() failed.\nError message: %s", strerror(status));
         exit(EXIT_FAILURE);
     }
@@ -221,7 +221,7 @@ struct ip *create_ipheader(struct ip *iphdr, struct ini_info *info, unsigned int
     iphdr->ip_sum = 0;
     iphdr->ip_sum = checksum((uint16_t *) &iphdr, IP4_HDRLEN);
 
-    return iphdr;
+    return 0;
 }
 
 /**
@@ -232,7 +232,7 @@ struct ip *create_ipheader(struct ip *iphdr, struct ini_info *info, unsigned int
  * @param info the parsed INI.
  * @return int 0 for success and -1 for failure.
  */
-struct tcphdr *create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *info) {
+int create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *info) {
     //struct tcphdr *tcphdr = calloc(1, sizeof(tcphdr));
     int tcp_flags[8] = { 0 };
     // Source port number (16 bits)
@@ -249,7 +249,7 @@ struct tcphdr *create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct 
 
     // Reserved (4 bits): should be 0
     tcphdr->th_x2 = 0;
-
+    
     // Data offset (4 bits): size of TCP header in 32-bit words
     tcphdr->th_off = TCP_HDRLEN / 4;
 

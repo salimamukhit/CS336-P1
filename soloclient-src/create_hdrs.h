@@ -46,7 +46,7 @@ uint16_t checksum(uint16_t *addr, int len);
  * @param ttl the time to live for the packet.
  * @return int 0 for success and -1 for failure.
  */
-struct ip *create_ipheader(struct ip *iphdr, struct ini_info *info, unsigned int tt);
+int create_ipheader(struct ip *iphdr, struct ini_info *info, unsigned int tt);
 
 /**
  * @brief Creates and fills out a TCP Header.
@@ -56,6 +56,6 @@ struct ip *create_ipheader(struct ip *iphdr, struct ini_info *info, unsigned int
  * @param info the parsed INI.
  * @return int 0 for success and -1 for failure.
  */
-struct tcphdr *create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *info);
+int create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *info);
 
 #endif
