@@ -10,7 +10,7 @@ CFLAGS += -g -Wall -I "$(SHARED)" -lm -fPIC -DLOGGER=$(LOGGER)
 
 # Source C files
 globalsrc= $(SHARED)ini_parser.c $(SHARED)next_token.c $(SHARED)msleep.c
-standalonesrc= standalone.c
+standalonesrc= standalone.c create_hdrs.c
 src=$(standalonesrc) $(globalsrc)
 
 obj=$(src:.c=.o)
@@ -21,8 +21,9 @@ $(TARGET): $(obj)
 # Shared headers
 shareheaders= $(SHARED)ini_parser.h $(SHARED)next_token.h $(SHARED)logger.h $(SHARED)msleep.h
 
-# Individual dependencies --
-standalone.o: standalone.c $(shareheaders)
+# Individual dependencies
+standalone.o: standalone.c $(shareheaders) create_hdrs.h
+create_hdrs.o: create_hdrs.c create_hdrs.h
 
 next_token.o: $(SHARED)next_token.c $(SHARED)next_token.h
 ini_parser.o: $(SHARED)ini_parser.c $(SHARED)ini_parser.h

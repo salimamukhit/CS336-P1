@@ -74,34 +74,40 @@ int parse_ini(struct ini_info *parsed_info) {
         // BUG is that line gets used up by next token
         if(strncmp(name, "ServerIP", 255) == 0) {
             inet_pton(AF_INET, value, &(parsed_info->server_ip));
-        } 
+        }
         else if(strncmp(name, "SourceUDP", 255) == 0) {
             parsed_info->train_udp.udph_srcport = (unsigned short int)atoi(value);
-        } 
+        }
         else if(strncmp(name, "DestinationUDP", 255) == 0) {
             parsed_info->train_udp.udph_destport = (unsigned short int)atoi(value);
-        } 
+        }
         else if(strncmp(name, "HeadDestinationTCP", 255) == 0) {
             parsed_info->head_port = (unsigned short int)atoi(value);
-        } 
+        }
         else if(strncmp(name, "TailDestinationTCP", 255) == 0) {
             parsed_info->tail_port = (unsigned short int)atoi(value);
-        } 
+        }
         else if(strncmp(name, "PortNumberTCP", 255) == 0) {
             parsed_info->server_port = (unsigned short int)atoi(value);
-        } 
+        }
         else if(strncmp(name, "PayloadSizeUDP", 255) == 0) {
             parsed_info->payload_size = (unsigned short int)atoi(value);
-        } 
+        }
         else if(strncmp(name, "InterMeasurementTime", 255) == 0) {
             parsed_info->meas_time = (time_t)atoi(value);
-        } 
+        }
         else if(strncmp(name, "NumberPackets", 255) == 0) {
             parsed_info->packet_num = (unsigned short int)atoi(value);
-        } 
+        }
         else if(strncmp(name, "TimeToLiveUDP", 255) == 0) {
             parsed_info->packet_ttl = (unsigned short int)atoi(value);
-        } 
+        }
+        else if(strncmp(name, "ClientIP", 255) == 0) {
+            strncpy(parsed_info->client_ip, value, 16);
+        }
+        else if(strncmp(name, "Interface", 255) == 0) {
+            strncpy(parsed_info->interface, value, 19);
+        }
         else {
             return -1;
         }

@@ -12,7 +12,7 @@ struct udpinfo {
 
 struct ini_info {
     unsigned int size;
-    char file_name[1024];
+    char file_name[128];
     struct in_addr server_ip;
     struct udpinfo train_udp;
     unsigned short head_port;
@@ -22,6 +22,8 @@ struct ini_info {
     time_t meas_time;
     unsigned short int packet_num;
     unsigned short int packet_ttl;
+    char interface[20];
+    char client_ip[17];
 };
 
 struct ipheader {

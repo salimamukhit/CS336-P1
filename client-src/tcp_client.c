@@ -36,15 +36,11 @@ int send_config(struct ini_info *info) {
     bzero(&(their_addr.sin_zero), 8);     /* zero the rest of the struct */
 
     printf("Preparing the connection...\n");
-    if(connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1) {
-        perror("connect");
-        return -1;
-    }
-    /* while(connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1) {
+    while(connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1) {
         perror("connect");
         sleep(1);
         printf("Trying again in 1 seconds\n");
-    }*/
+    }
     printf("Connection success\n");
 
     char line_arr[256] = { 0 };

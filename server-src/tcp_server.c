@@ -12,6 +12,8 @@
 
 #define MAX_CONFIG_SIZE 4096
 
+static int sockfd;
+
 /**
  * @brief Holds the information gathered from the INI.
  */
@@ -69,7 +71,7 @@ int write_file(char buf[], char *file_name) {
  * @return int 
  */
 int start_server(u_int16_t port, struct ini_info *info) {
-    int sockfd, connfd;
+    int connfd;
     unsigned int len; 
     struct sockaddr_in servaddr, cli; 
     printf("Note: The INI can be at max 255 lines long!\n");
@@ -81,7 +83,7 @@ int start_server(u_int16_t port, struct ini_info *info) {
         exit(0); 
     } 
     else {
-        printf("Socket successfully created..\n"); 
+        printf("Socket successfully created..\n");
     }
     bzero(&servaddr, sizeof(servaddr));
 
@@ -158,43 +160,21 @@ int start_server(u_int16_t port, struct ini_info *info) {
     write(connfd, response_buf, strlen(response_buf));
     shutdown(connfd, SHUT_WR);
   
-    // After chatting close the socket 
-    close(sockfd);
     return 0;
 }
 
 int send_results(unsigned short int port, double* low_arrival, double *high_arrival) {
     sleep(2);
-    int sockfd, connfd;
+    int connfd;
     unsigned int len; 
     struct sockaddr_in servaddr, cli;
 
     printf("Now the TCP server is going to send findings to the client.\n");
-
-    // creation of a socket
-    sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); 
-    if(sockfd == -1) {
-        perror("Socket"); 
-        return -1; 
-    } 
-    else {
-        printf("Socket successfully created..\n"); 
-    }
-    bzero(&servaddr, sizeof(servaddr));
   
     // assigning IP and port number
     servaddr.sin_family = AF_INET; 
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
-    servaddr.sin_port = htons(port); 
-  
-    // binding
-    if((bind(sockfd, (struct sockaddr*) &servaddr, sizeof(servaddr))) != 0) { 
-        perror("Bind"); 
-        return -1;
-    } 
-    else {
-        printf("Socket successfully binded..\n"); 
-    }
+    servaddr.sin_port = htons(port);
 
     // listening
     if((listen(sockfd, 5)) != 0) { 
@@ -208,9 +188,9 @@ int send_results(unsigned short int port, double* low_arrival, double *high_arri
     len = sizeof(cli);
   
     // accepting the data from the client
-    connfd = accept(sockfd, (struct sockaddr*) &cli, &len); 
-    if(connfd < 0) { 
-        perror("Server accept"); 
+    connfd = accept(sockfd, (struct sockaddr*) &cli, &len);
+    if(connfd < 0) {
+        perror("Server accept");
         return -1;
     } 
     else {

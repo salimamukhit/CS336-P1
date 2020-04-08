@@ -19,149 +19,165 @@
 
 #include "../shared-src/ini_parser.h"
 #include "../shared-src/structs.h"
-#include "../client-src/udp_client.h"
 
-#define INTERFACE "wlp7s0"
-#define INI_NAME "config.ini"
-#define MY_IP "127.0.0.1"
-#define TARGET_IP "64.233.163.2" // google's IP
-#define PCKT_LEN 8192
+#include "create_hdrs.h"
 
-/* Checksum functions */
-unsigned short csum(unsigned short *buf, int len);
+//#define INTERFACE "enp4s0" // Erik
+//"wlp7s0" //Salima
+#define INI_NAME "solo_config.ini"
+#define MY_IP "192.168.1.37"
+#define TARGET_IP "107.180.95.33" // VPS IP
 
-int main() {
-    // getting the mac address
-    char* interface;
-    struct ifreq ifr;
-    uint8_t mac_src[6];
-    
-    printf("Starting the standalone compression detection application.\n");
+void set_ifr(struct ifreq *ifr, int *sockfd, char *interface_name);
 
-    interface = calloc(1, sizeof(INTERFACE));
-    strcpy(interface, INTERFACE);
-    int sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-    if (sockfd < 0) {
-        perror("Socket");
-        return EXIT_FAILURE;
-    }
-    printf("Socket creation was successful\n");
+/**
+ * @brief This function helps set the ifreq for the networking interface.
+ * 
+ *        Set the name in ifr.ifr_name and then use ioctl([socket], SIOCGIFINDEX, &ifr)
+ *        to set the index of the networking device. This sets ifr.ifr_ifindex;
+ * 
+ *        This in particular is used for the setsockopt() function to specify the hardware interface.
+ * 
+ * @param sockfd the unopened socket file descriptor. (Use in the beginning before setting ip header).
+ */
+void set_ifr(struct ifreq *ifr, int *sockfd, char *interface_name) {
 
-    memset(&ifr, 0, sizeof(ifr));
-    snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", interface);
-
-    if(ioctl(sockfd, SIOCGIFHWADDR, & ifr) < 0) {
-        perror("ioctl() failed to get source MAC address ");
-        return EXIT_FAILURE;
-    }
-    close(sockfd);
-
-    memcpy(mac_src, ifr.ifr_hwaddr.sa_data, 6);
-    printf("MAC address for interface %s is ", interface);
-
-    for(int i = 0; i < 5; i++) {
-        printf("%02x:", mac_src[i]);
+    // Submit request for a socket descriptor to look up interface.
+    if((*sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) {
+        perror("socket() failed to get socket descriptor for using ioctl() ");
+        exit (EXIT_FAILURE);
     }
 
-    printf("%02x\n", mac_src[5]);
-    free(interface);
+    /* Use ioctl() to look up interface index which we will use to
+    ** bind socket descriptor sd to specified interface with setsockopt() since
+    ** none of the other arguments of sendto() specify which interface to use.
+    */
+    snprintf(ifr->ifr_ifrn.ifrn_name, strlen(interface_name) + 1, "%s", interface_name);
+    if(ioctl(*sockfd, SIOCGIFINDEX, ifr) < 0) {
+        printf("Device: '%s' | '%s'\n", interface_name, ifr->ifr_ifrn.ifrn_name);
+        perror("ioctl() failed to find interface ");
+        exit(EXIT_FAILURE);
+    }
 
-    struct ini_info *info = calloc(1, sizeof(struct ini_info));
-    strcpy(info->file_name, INI_NAME);
-    if(parse_ini(info) != 0) {
-        printf("Problem with INI file\n");
-        exit(-1);
-    }
-    printf("Parsed the ini file\n");
-    // creating tcp head and tail
-    char buffer[PCKT_LEN];
-    struct ipheader *ip = (struct ipheader *) buffer;
-    struct tcpheader *tcp = (struct tcpheader *) (buffer + sizeof(struct ipheader));
-    struct sockaddr_in sin, din;
-    int one = 1;
-    const int *val = &one;
-    memset(buffer, 0, PCKT_LEN);
-    int sd = socket(PF_INET, SOCK_RAW, IPPROTO_TCP);
-    if(sd < 0) {
-        perror("socket() error");
-        exit(-1);
-    }
-    printf("socket()-SOCK_RAW and tcp protocol is OK.\n");
-    // The source is redundant, may be used later if needed
-    // Address family
-    sin.sin_family = AF_INET;
-    din.sin_family = AF_INET;
-    // Source port, can be any, modify as needed
-    sin.sin_port = htons(info->server_port);
-    din.sin_port = htons(info->head_port);
-    // Source IP, can be any, modify as needed
-    sin.sin_addr.s_addr = inet_addr("127.0.0.1");
-    din.sin_addr.s_addr = inet_addr("64.233.160.5");
-    // IP structure
-    ip->iph_ihl = 5;
-    ip->iph_ver = 4;
-    ip->iph_tos = 16;
-    ip->iph_len = sizeof(struct ipheader) + sizeof(struct tcpheader);
-    ip->iph_ident = htons(54321);
-    ip->iph_offset = 0;
-    ip->iph_ttl = 64;
-    ip->iph_protocol = 6; // TCP
-    ip->iph_chksum = 0; // Done by kernel
-    // Source IP, modify as needed, spoofed, we accept through command line argument
-    ip->iph_sourceip = inet_addr("127.0.0.1");
-    // Destination IP, modify as needed, but here we accept through command line argument
-    ip->iph_destip = inet_addr("64.233.160.5");
-    // The TCP structure. The source port, spoofed, we accept through the command line
-    tcp->tcph_srcport = htons(info->server_port);
-    // The destination port, we accept through command line
-    tcp->tcph_destport = htons(info->head_port);
-    tcp->tcph_seqnum = htonl(1);
-    tcp->tcph_acknum = 0;
-    tcp->tcph_offset = 5;
-    tcp->tcph_syn = 1;
-    tcp->tcph_ack = 0;
-    tcp->tcph_win = htons(32767);
-    tcp->tcph_chksum = 0; // Done by kernel
-    tcp->tcph_urgptr = 0;
-    // IP checksum calculation
-    ip->iph_chksum = csum((unsigned short *) buffer, (sizeof(struct ipheader) + sizeof(struct tcpheader)));
-    // Inform the kernel do not fill up the headers' structure, we fabricated our own
-    if(setsockopt(sd, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0) {
-        perror("setsockopt() error");
-        exit(-1);
-    }
-    printf("setsockopt() is OK\n");
-    printf("Sending the head\n");
-    if(sendto(sd, buffer, ip->iph_len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
-        perror("sendto() error");
-        exit(-1);
-    }
-    printf("Packet was sent\n");
-    sleep(2);
-    tcp->tcph_destport = htons(info->tail_port);
-    din.sin_port = htons(info->tail_port);
-    printf("Sending the tail on port %d from %d\n", htons(info->tail_port), htons(info->server_port));
-    if(sendto(sd, buffer, ip->iph_len, 0, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
-        perror("sendto() error");
-        exit(-1);
-    }
-    printf("Packet was sent\n");
-    
-        
-    close(sd);
-    free(info);
-    // creating udp packets
-    // sending everything
-    // receiving RST and ICMP packets
-    return 0;
+    close(*sockfd);
+    printf("Index for interface %s is %i\n", interface_name, ifr->ifr_ifindex);
 }
 
-unsigned short csum(unsigned short *buf, int len) {
-        unsigned long sum;
-        for(sum=0; len>0; len--)
-            sum += *buf++;
-        sum = (sum >> 16) + (sum &0xffff);
-        sum += (sum >> 16);
-        return (unsigned short)(~sum);
+int main(int argc, char **argv) {
+    /* Parse our INI */
+    struct ini_info *info = calloc(1, sizeof(struct ini_info));
+    strcpy(info->file_name, INI_NAME);
+    parse_ini(info);
 
+    /* Error Status Tracking */
+    int status;
+
+    /* Declare descritor for the interface */
+    struct ifreq *ifr = calloc(1, sizeof(ifr));
+
+    /* File descritor for the socket */
+    int sockfd;
+
+    /* Define Flags */
+    int *ip_flags;
+    int *tcp_flags;
+
+    /* Set to toggle options in setsockopt() on or off */
+    const int on = 1;
+
+    /* Definition of IP/TCP headers */
+    struct ip iphdr;
+    struct tcphdr tcphdr;
+    struct addrinfo *resolved_target;
+    struct sockaddr_in *ipv4;
+    struct sockaddr_in *sin = calloc(1, sizeof(struct sockaddr_in));
+
+    /* Allocate/Set memory for IP headers, flags, hints and other structs */
+    uint8_t *packet = calloc(IP_MAXPACKET, sizeof(uint8_t));
+    struct addrinfo *hints = calloc(1, sizeof(struct addrinfo));
+    ip_flags = calloc(4, sizeof(int));
+    tcp_flags = calloc(8, sizeof(int));
+    char *dst_ip = calloc(INET_ADDRSTRLEN, sizeof(char));
+
+
+
+
+    /* ----------------- Initialization is done, now we create the IP Header ----------------- */
+
+    /* We now need to get and set the interface name for the socket descriptor */
+    set_ifr(ifr, &sockfd, info->interface);
+
+    // Fill out hints for getaddrinfo().
+    hints->ai_family = AF_INET;
+    hints->ai_socktype = SOCK_STREAM;
+    hints->ai_flags = hints->ai_flags | AI_CANONNAME;
+
+    // Resolve target using getaddrinfo().
+    if((status = getaddrinfo(TARGET_IP, NULL, hints, &resolved_target)) != 0) {
+        fprintf(stderr, "getaddrinfo() failed: %s\n", gai_strerror(status));
+        exit(EXIT_FAILURE);
+    }
+
+    ipv4 = (struct sockaddr_in *) resolved_target->ai_addr;
+    void *tmp = &(ipv4->sin_addr);
+    if(inet_ntop(AF_INET, tmp, dst_ip, INET_ADDRSTRLEN) == NULL) {
+        status = errno;
+        fprintf(stderr, "inet_ntop() failed.\nError message: %s", strerror (status));
+        exit(EXIT_FAILURE);
+    }
+    freeaddrinfo(resolved_target);
+
+
+    /* --- IPv4 Header Stage --- */
+    
+    create_ipheader(&iphdr, info, 255);
+
+    /* --- TCP Header Stage --- */
+
+    create_tcpheader(&iphdr, &tcphdr, info);
+
+
+    /* --- Prepare the packet --- */
+
+    // First part is an IPv4 header.
+    memcpy(packet, &iphdr, IP4_HDRLEN * sizeof(uint8_t));
+
+    // Next part of packet is upper layer protocol header.
+    memcpy((packet + IP4_HDRLEN), &tcphdr, TCP_HDRLEN * sizeof(uint8_t));
+
+    // The kernel is going to prepare layer 2 information (ethernet frame header) for us.
+    // For that, we need to specify a destination for the kernel in order for it
+    // to decide where to send the raw datagram. We fill in a struct in_addr with
+    // the desired destination IP address, and pass this structure to the sendto() function.
+    sin->sin_family = AF_INET;
+    sin->sin_addr.s_addr = iphdr.ip_dst.s_addr;
+
+    // Submit request for a raw socket descriptor.
+    if((sockfd = socket (AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) {
+        perror("socket() failed ");
+        exit(EXIT_FAILURE);
+    }
+
+    // Set flag so socket expects us to provide IPv4 header.
+    if(setsockopt(sockfd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
+        perror("setsockopt() failed to set IP_HDRINCL ");
+        exit(EXIT_FAILURE);
+    }
+
+    // Bind socket to interface index.
+    if(setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, ifr, sizeof(*ifr)) < 0) {
+        perror("setsockopt() failed to bind to interface ");
+        exit(EXIT_FAILURE);
+    }
+
+    // Send packet.
+    if(sendto(sockfd, packet, IP4_HDRLEN + TCP_HDRLEN, 0, sin, sizeof(struct sockaddr)) < 0)  {
+        perror("sendto() failed ");
+        exit(EXIT_FAILURE);
+    }
+
+    // Close socket descriptor.
+    close(sockfd);
+
+    return 0;
 }
