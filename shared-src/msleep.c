@@ -5,8 +5,7 @@ int msleep(long msec) {
     struct timespec ts;
     int res;
 
-    if (msec < 0)
-    {
+    if (msec < 0) {
         errno = EINVAL;
         return -1;
     }

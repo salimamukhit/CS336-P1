@@ -19,18 +19,23 @@
 #define PORT 8080
 
 void fillTrain(char** train, unsigned short int num, unsigned int size, int type) {
+    unsigned char low_byte;
+    unsigned char high_byte;
+
     if(type == 0) {
-        for(int i=0; i<num; i++) {
+        for(unsigned int i=0; i<num; i++) {
             char *ptr = *(train+i);
             for(int j=0; j<size; j++) {
                 *ptr = '0';
                 ptr++;
             }
         }
-    } else {
+    }
+    else {
         FILE *fd = fopen("/dev/urandom", "r");
         for(int i=0; i<num; i++) {
-            fgets(train[i], size, fd);
+            // Shift the start of the train over two bytes
+            fgets((train[i] + 16), size, fd);
         }
         fclose(fd);
     }
@@ -101,10 +106,12 @@ int udp_train(struct ini_info* info) {
     free(low_entropy);
     free(high_entropy);
 
-    char buffer[10];
+    char buffer[1024] = { 0 };
+
+    socklen_t len = (socklen_t) sizeof(servaddr);
 
     // the client is informed that server is done with receiving packets
-    int m = recvfrom(sockfd, buffer, 10, MSG_WAITALL, (struct sockaddr* )&servaddr, sizeof(servaddr));
+    int m = recvfrom(sockfd, buffer, 10, MSG_WAITALL, (struct sockaddr* )&servaddr, (socklen_t *) &len);
     buffer[m] = '\0';
     printf("Received message from server: %s\n", buffer);
 

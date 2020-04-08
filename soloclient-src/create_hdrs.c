@@ -160,7 +160,6 @@ uint16_t tcp4_checksum(struct ip *iphdr, struct tcphdr *tcphdr) {
  * @return int 0 for success and -1 for failure.
  */
 int create_ipheader(struct ip *iphdr, struct ini_info *info, unsigned int ttl) {
-    //struct ip *iphdr = calloc(1, sizeof(struct iphdr));
     int ip_flags[4] = { 0 };
 
     // IPv4 header length (4 bits): Number of 32-bit words in header = 5
@@ -233,8 +232,8 @@ int create_ipheader(struct ip *iphdr, struct ini_info *info, unsigned int ttl) {
  * @return int 0 for success and -1 for failure.
  */
 int create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *info) {
-    //struct tcphdr *tcphdr = calloc(1, sizeof(tcphdr));
     int tcp_flags[8] = { 0 };
+
     // Source port number (16 bits)
     tcphdr->th_sport = htons(60);
 

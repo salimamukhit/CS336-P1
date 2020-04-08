@@ -11,6 +11,7 @@
 #include "../shared-src/ini_parser.h"
 #include "../shared-src/logger.h"
 #include "../shared-src/structs.h"
+#include "../shared-src/msleep.h"
 
 #define PORT 50000   /* the port client will be connecting to */
 #define MAXDATASIZE 100 /* max number of bytes we can get at once */
@@ -52,7 +53,7 @@ int send_config(struct ini_info *info) {
                 perror("send");
                 exit(EXIT_FAILURE);
             }
-            sleep(0.1);
+            msleep(100);
         }
         printf("After the send function \n");
         if(send(sockfd, "EOF", 30, 0) == -1) {
@@ -72,6 +73,7 @@ int send_config(struct ini_info *info) {
         sleep(1);
     }
 
+    shtudown(sockfd);
     close(sockfd);
     return 0;
 }
