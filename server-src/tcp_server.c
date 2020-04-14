@@ -167,14 +167,9 @@ int send_results(unsigned short int port, double* low_arrival, double *high_arri
     sleep(2);
     int connfd;
     unsigned int len; 
-    struct sockaddr_in servaddr, cli;
+    struct sockaddr_in cli;
 
     printf("Now the TCP server is going to send findings to the client.\n");
-  
-    // assigning IP and port number
-    servaddr.sin_family = AF_INET; 
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
-    servaddr.sin_port = htons(port);
 
     // listening
     if((listen(sockfd, 5)) != 0) { 

@@ -19,7 +19,8 @@
 
 int start_udp_server(struct ini_info *info, double* low_arrival, double* high_arrival) {
     printf("UDP server started\n");
-    printf("The port is: %d\n", htons(PORT));
+    printf("The port is: %d\n", htons(PORT));\
+    printf("The number of packets is %d", info->packet_num);
 
     char buffer[info->payload_size]; // storage of received data
     struct sockaddr_in servaddr, cliaddr; // declaring server and client addresses

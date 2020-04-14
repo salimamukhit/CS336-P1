@@ -23,7 +23,6 @@
 int send_config(struct ini_info *info) {
     int sockfd, numbytes;  
     char buf[MAXDATASIZE];
-    struct hostent *he;
     struct sockaddr_in their_addr; /* connector's address information */
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
@@ -47,7 +46,7 @@ int send_config(struct ini_info *info) {
     char line_arr[256] = { 0 };
     FILE* fp = fopen(CONFIGNAME, "r");
     while(1) {
-        while(fgets(line_arr, 256, fp) != NULL) {
+        while(fgets(line_arr, sizeof(line_arr), fp) != NULL) {
             LOG("LINE: %s", line_arr);
             if(send(sockfd, line_arr, 256, 0) == -1) {
                 perror("send");
@@ -73,7 +72,7 @@ int send_config(struct ini_info *info) {
         sleep(1);
     }
 
-    shtudown(sockfd);
+    shutdown(sockfd, SHUT_WR);
     close(sockfd);
     return 0;
 }

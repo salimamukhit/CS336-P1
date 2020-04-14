@@ -108,6 +108,9 @@ int parse_ini(struct ini_info *parsed_info) {
         else if(strncmp(name, "Interface", 255) == 0) {
             strncpy(parsed_info->interface, value, 19);
         }
+        else if(strncmp(name, "StandAloneDst", 255) == 0) {
+            strncpy(parsed_info->standalone_dst, value, 16);
+        }
         else {
             return -1;
         }

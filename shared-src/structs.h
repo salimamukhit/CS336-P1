@@ -24,6 +24,7 @@ struct ini_info {
     unsigned short int packet_ttl;
     char interface[20];
     char client_ip[17];
+    char standalone_dst[17];
 };
 
 struct ipheader {

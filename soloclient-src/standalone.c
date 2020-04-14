@@ -26,8 +26,8 @@
 //#define INTERFACE "enp4s0" // Erik
 //"wlp7s0" //Salima
 #define INI_NAME "solo_config.ini"
-#define MY_IP "192.168.1.37"
-#define TARGET_IP "107.180.95.33" // VPS IP
+#define MY_IP "192.168.42.177"
+#define TARGET_IP "1.1.1.1"  //"107.180.95.33" // VPS IP
 
 void set_ifr(struct ifreq *ifr, int *sockfd, char *interface_name);
 
@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
     struct tcphdr tcphdr;
     struct addrinfo *resolved_target;
     struct sockaddr_in *ipv4;
-    struct sockaddr_in *sin = calloc(1, sizeof(struct sockaddr_in));
+    struct sockaddr_in sin;  // = calloc(1, sizeof(struct sockaddr_in));
 
     /* Allocate/Set memory for IP headers, flags, hints and other structs */
     uint8_t *packet = calloc(IP_MAXPACKET, sizeof(uint8_t));
@@ -150,8 +150,8 @@ int main(int argc, char **argv) {
     // For that, we need to specify a destination for the kernel in order for it
     // to decide where to send the raw datagram. We fill in a struct in_addr with
     // the desired destination IP address, and pass this structure to the sendto() function.
-    sin->sin_family = AF_INET;
-    sin->sin_addr.s_addr = iphdr.ip_dst.s_addr;
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = iphdr.ip_dst.s_addr;
 
     // Submit request for a raw socket descriptor.
     if((sockfd = socket (AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) {
@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
     }
 
     // Send packet.
-    if(sendto(sockfd, packet, IP4_HDRLEN + TCP_HDRLEN, 0, (struct sockaddr_in *) sin, sizeof(struct sockaddr)) < 0)  {
+    if(sendto(sockfd, packet, IP4_HDRLEN + TCP_HDRLEN, 0, (const struct sockaddr *) &sin, sizeof(struct sockaddr)) < 0)  {
         perror("sendto() failed ");
         exit(EXIT_FAILURE);
     }

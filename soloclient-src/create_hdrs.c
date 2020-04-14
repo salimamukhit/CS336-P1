@@ -183,7 +183,7 @@ int create_ipheader(struct ip *iphdr, struct ini_info *info, unsigned int ttl) {
     ip_flags[0] = 0;
 
     // Do not fragment flag (1 bit)
-    ip_flags[1] = 0;
+    ip_flags[1] = 1;
 
     // More fragments following flag (1 bit)
     ip_flags[2] = 0;
@@ -209,9 +209,9 @@ int create_ipheader(struct ip *iphdr, struct ini_info *info, unsigned int ttl) {
         exit(EXIT_FAILURE);
     }
 
-    char *dst_ip = "107.180.95.33"; // VPS IP
+    //char *dst_ip = "127.0.0.1";  // "1.1.1.1";  //"107.180.95.33"; // VPS IP
     // Destination IPv4 address (32 bits)
-    if ((status = inet_pton (AF_INET, dst_ip, &(iphdr->ip_dst))) != 1) {
+    if ((status = inet_pton (AF_INET, info->standalone_dst, &(iphdr->ip_dst))) != 1) {
         fprintf(stderr, "inet_pton() failed.\nError message: %s", strerror(status));
         exit(EXIT_FAILURE);
     }
@@ -235,10 +235,10 @@ int create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *i
     int tcp_flags[8] = { 0 };
 
     // Source port number (16 bits)
-    tcphdr->th_sport = htons(60);
+    tcphdr->th_sport = htons(info->server_port);  // 60
 
     // Destination port number (16 bits)
-    tcphdr->th_dport = htons(80);
+    tcphdr->th_dport = htons(info->head_port);  //80
 
     // Sequence number (32 bits)
     tcphdr->th_seq = htonl(0);

@@ -19,8 +19,8 @@
 #define PORT 8080
 
 void fillTrain(char** train, unsigned short int num, unsigned int size, int type) {
-    unsigned char low_byte;
-    unsigned char high_byte;
+    //unsigned char low_byte;
+    //unsigned char high_byte;
 
     if(type == 0) {
         for(unsigned int i=0; i<num; i++) {
@@ -35,10 +35,19 @@ void fillTrain(char** train, unsigned short int num, unsigned int size, int type
         FILE *fd = fopen("/dev/urandom", "r");
         for(int i=0; i<num; i++) {
             // Shift the start of the train over two bytes
-            fgets((train[i] + 16), size, fd);
+            fgets(train[i], size, fd);
+            train[i][0] = 'F';
+            train[i][1] = 'G';
         }
         fclose(fd);
     }
+}
+
+void print_payload(char *payload, unsigned int size) {
+    for(int i = 0; i < size; i++) {
+        printf("%d", !!((payload[i] << i) & 0x80));
+    }
+    puts("\n--------------------------------------------------------");
 }
 
 int udp_train(struct ini_info* info) {
@@ -82,8 +91,15 @@ int udp_train(struct ini_info* info) {
     fillTrain(low_entropy, packets, size, 0);
     fillTrain(high_entropy, packets, size, 1);
 
-    printf("Low entropy packet: %s\n", low_entropy[0]);
-    printf("High entropy packet: %s\n", high_entropy[0]);
+    //printf("Low entropy packet:\n");
+    //print_payload(low_entropy[0], size);
+    //printf("High entropy packet:\n");
+    //print_payload(high_entropy[0], size);
+
+    printf("Low entropy packet:  %.*s\n", packets, low_entropy[0]);
+    puts("");
+    puts("High entropy gets null-terminated prematurely becuase of the randomness.");
+    printf("High entropy packet:  %s\n", high_entropy[0]);
 
     for(int i = 0; i < packets; i++) {
         msleep(1);
