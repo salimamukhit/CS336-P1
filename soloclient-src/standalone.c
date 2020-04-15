@@ -26,7 +26,7 @@
 //#define INTERFACE "enp4s0" // Erik
 //"wlp7s0" //Salima
 #define INI_NAME "solo_config.ini"
-#define MY_IP "192.168.42.177"
+#define MY_IP "192.168.42.162"
 #define TARGET_IP "1.1.1.1"  //"107.180.95.33" // VPS IP
 
 void set_ifr(struct ifreq *ifr, int *sockfd, char *interface_name);
@@ -159,6 +159,7 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
+    /* We need to tell the kernel that we'll be adding our own IP header */
     // Set flag so socket expects us to provide IPv4 header.
     if(setsockopt(sockfd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
         perror("setsockopt() failed to set IP_HDRINCL ");
