@@ -29,3 +29,6 @@ GPATH
 GRTAGS
 GTAGS
 udp4_cooked.c
+soloclient-src/standalone
+soloclient-src/solo_config_loopback.ini
+soloclient-src/solo_config.ini
