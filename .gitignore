@@ -21,6 +21,8 @@ received.ini
 recieved_config.ini
 recieved.ini
 
+solo_config.ini
+
 # Ignore everything in the ./bin folder
 bin*
 
