@@ -8,6 +8,7 @@
 
 #include <sys/ioctl.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/socket.h>
 #include <net/if.h>
 #include <net/ethernet.h>
@@ -23,6 +24,8 @@
 #include "../shared-src/ini_parser.h"
 #include "../shared-src/structs.h"
 #include "create_hdrs.h"
+#include "sniff_rst.h"
+#include "logger.h"
 
 #define _GNU_SOURCE
 #define INI_NAME "solo_config.ini"
@@ -31,7 +34,7 @@
 void set_ifr(struct ifreq *ifr, int *sockfd, char *interface_name);
 int get_rst(struct ini_info *info);
 int send_train(struct ini_info *info, struct udphdr *udphdr, struct ip *iphdr, int type, int *sockfd, uint8_t *ether_frame, struct sockaddr_ll *device);
-void fillTrain(char** train, unsigned short int num, unsigned int size, int type);
+void fillTrain(unsigned char** train, unsigned short int num, unsigned int size, int type);
 
 /**
  * @brief This function helps set the ifreq for the networking interface.
@@ -65,8 +68,6 @@ void set_ifr(struct ifreq *ifr, int *sockfd, char *interface_name) {
     close(*sockfd);
     printf("Index for interface %s is %i\n", interface_name, ifr->ifr_ifindex);
 }
-
-
 
 int main(int argc, char **argv) {
     /* Parse our INI */
@@ -175,10 +176,31 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    // Send packet.
-    if(sendto(sockfd, packet, IP4_HDRLEN + TCP_HDRLEN, 0, (const struct sockaddr *) &sin, sizeof(struct sockaddr)) < 0)  {
-        perror("sendto() failed ");
-        exit(EXIT_FAILURE);
+    pid_t my_pid = getpid();
+    printf("Starting up, my PID is %d\n", my_pid);
+    pid_t child = fork();
+    if (child == 0) {
+        /* I am the child */
+        pid_t my_pid = getpid();
+        printf("Hello from the child! PID = %d. Going to sleep.\n", my_pid);
+        // Wait for RST flag
+        get_rst(info);
+    } else if (child == -1) {
+        /* Something went wrong */
+        perror("fork");
+    } else {
+        /* I am the parent */
+        pid_t my_pid = getpid();
+        printf("Hello from the parent! PID = %d\n", my_pid);
+        printf("PID %d waiting for its child (%d)!\n", my_pid, child);
+        // Send packet.
+        if(sendto(sockfd, packet, IP4_HDRLEN + TCP_HDRLEN, 0, (const struct sockaddr *) &sin, sizeof(struct sockaddr)) < 0)  {
+            perror("sendto() failed ");
+            exit(EXIT_FAILURE);
+        }
+        LOGP("Sent TCP Packet :)\n");
+        wait(&child);
+        printf("Child finished executing. Parent exiting.\n");
     }
 
     // Submit request for a raw socket descriptor for UDP
@@ -201,77 +223,7 @@ int main(int argc, char **argv) {
 
     // Close socket descriptors.
     close(sockfd);
-    close(sd);
-
-    // Wait for RST flag
-    get_rst(info);
-
-
-    return 0;
-}
-
-/**
- * @brief Uses libpcap to retrive the RST packet.
- * 
- * @param info the struct from the INI.
- * @return int 0 for success and -1 for failure.
- */
-int get_rst(struct ini_info *info) {
-    /* The var for the raw data of the packet */
-    const unsigned char *packet = NULL;
-    /* To Store network address and netmask */ 
-    bpf_u_int32 netaddr=0, mask=0;
-    /* Packet information (timestamp,size...) */ 
-    struct pcap_pkthdr packet_header;
-    /* Place to store the BPF filter program */
-    struct bpf_program filter;
-    /* Buffer for pcap errors */
-    char errbuf[PCAP_ERRBUF_SIZE];
-    /* The specified device interface from the INI */
-    char *dev = info->interface;
-    /* The device descriptor for libpcap */
-    pcap_t *dev_descriptor = NULL;
-
-    pcap_t *handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
-    if(handle == NULL) {
-        fprintf(stderr, "Couldn't open device %s: %s\n", dev, errbuf);
-        exit(EXIT_FAILURE);
-    }
-
-    /* Look up info from the capture device. */ 
-    if(pcap_lookupnet(dev, &netaddr, &mask, errbuf) == -1 ){ 
-        fprintf(stderr, "ERROR: pcap_lookupnet(): %s\n", errbuf);
-        exit(EXIT_FAILURE);
-    }
-
-    /* Compiles the filter expression into a BPF filter program */
-    if(pcap_compile(dev_descriptor, &filter, "(tcp[13] == 0x10) or (tcp[13] == 0x18)", 1, mask) == -1){
-        fprintf(stderr, "Error in pcap_compile(): %s\n", pcap_geterr(dev));
-        exit(EXIT_FAILURE);
-    }
-    
-    /* Load the filter program into the packet capture device. */ 
-    if(pcap_setfilter(dev_descriptor, &filter) == -1 ){
-        fprintf(stderr, "Error in pcap_setfilter(): %s\n", pcap_geterr(dev));
-        exit(EXIT_FAILURE);
-    }
-
-    if((packet = pcap_next(dev_descriptor, &packet_header)) == NULL){
-        fprintf(stderr, "Error in pcap_next()\n", errbuf);
-        exit(EXIT_FAILURE);
-    }
-
-
-    struct ip *iphdr = (struct ip *)(packet+14);
-    struct tcphdr *tcphdr = (struct tcphdr *)(packet+14+20);
-    printf("+-------------------------+\n");
-    printf("   ACK: %u\n", ntohl(tcphdr->th_ack) ); 
-    printf("   SEQ: %u\n", ntohl(tcphdr->th_seq) );
-    printf("   DST IP: %s\n", inet_ntoa(iphdr->ip_dst)); 
-    printf("   SRC IP: %s\n", inet_ntoa(iphdr->ip_src)); 
-    printf("   SRC PORT: %d\n", ntohs(tcphdr->th_sport) ); 
-    printf("   DST PORT: %d\n", ntohs(tcphdr->th_dport) );
-    printf("+-------------------------+\n");
+//    close(sd);
 
     return 0;
 }
@@ -281,10 +233,10 @@ int send_train(struct ini_info *info, struct udphdr *udphdr, struct ip* iphdr, i
     int bytes;
 
     /* Filling up the trains with data */
-    char** low_train = (char**) calloc(info->payload_size, sizeof(char));
-    char** high_train = (char**) calloc(info->payload_size, sizeof(char));
+    unsigned char** low_train = (unsigned char**) calloc(info->payload_size, sizeof(unsigned char));
+    unsigned char** high_train = (unsigned char**) calloc(info->payload_size, sizeof(unsigned char));
     fillTrain(low_train, info->packet_num, info->payload_size, 0);
-    fillTrain(low_train, info->packet_num, info->payload_size, 1);
+    fillTrain(high_train, info->packet_num, info->payload_size, 1);
 
     create_udpheader(iphdr, udphdr, info, low_train[0]);
 
@@ -304,13 +256,13 @@ int send_train(struct ini_info *info, struct udphdr *udphdr, struct ip* iphdr, i
     return 0;
 }
 
-void fillTrain(char** train, unsigned short int num, unsigned int size, int type) {
+void fillTrain(unsigned char** train, unsigned short int num, unsigned int size, int type) {
     //unsigned char low_byte;
     //unsigned char high_byte;
 
     if(type == 0) {
         for(unsigned int i=0; i<num; i++) {
-            char *ptr = *(train+i);
+            unsigned char *ptr = *(train+i);
             for(int j=0; j<size; j++) {
                 *ptr = '0';
                 ptr++;
@@ -321,7 +273,7 @@ void fillTrain(char** train, unsigned short int num, unsigned int size, int type
         FILE *fd = fopen("/dev/urandom", "r");
         for(int i=0; i<num; i++) {
             // Shift the start of the train over two bytes
-            fgets(train[i], size, fd);
+            fgets((char *) train[i], size, fd);
             train[i][0] = 'F';
             train[i][1] = 'G';
         }
