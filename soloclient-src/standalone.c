@@ -26,8 +26,8 @@
 //#define INTERFACE "enp4s0" // Erik
 //"wlp7s0" //Salima
 #define INI_NAME "solo_config.ini"
-#define MY_IP "192.168.42.177"
-#define TARGET_IP "1.1.1.1"  //"107.180.95.33" // VPS IP
+//#define MY_IP "192.168.42.162"
+//#define TARGET_IP "10.0.2.15"  //"107.180.95.33" // VPS IP
 
 void set_ifr(struct ifreq *ifr, int *sockfd, char *interface_name);
 
@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
     hints->ai_flags = hints->ai_flags | AI_CANONNAME;
 
     // Resolve target using getaddrinfo().
-    if((status = getaddrinfo(TARGET_IP, NULL, hints, &resolved_target)) != 0) {
+    if((status = getaddrinfo(info->standalone_dst, NULL, hints, &resolved_target)) != 0) {
         fprintf(stderr, "getaddrinfo() failed: %s\n", gai_strerror(status));
         exit(EXIT_FAILURE);
     }
@@ -159,6 +159,7 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
+    /* We need to tell the kernel that we'll be adding our own IP header */
     // Set flag so socket expects us to provide IPv4 header.
     if(setsockopt(sockfd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
         perror("setsockopt() failed to set IP_HDRINCL ");
