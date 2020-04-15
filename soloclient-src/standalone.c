@@ -3,6 +3,9 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+
+#include <pcap.h>
+
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -23,13 +26,11 @@
 #include "create_hdrs.h"
 
 #define _GNU_SOURCE
-//#define INTERFACE "enp4s0" // Erik
-//"wlp7s0" //Salima
 #define INI_NAME "solo_config.ini"
-//#define MY_IP "192.168.42.162"
-//#define TARGET_IP "10.0.2.15"  //"107.180.95.33" // VPS IP
+#define MAX_CAPTURE_BYTES 2048
 
 void set_ifr(struct ifreq *ifr, int *sockfd, char *interface_name);
+int get_rst(struct ini_info *info);
 
 /**
  * @brief This function helps set the ifreq for the networking interface.
@@ -180,6 +181,76 @@ int main(int argc, char **argv) {
 
     // Close socket descriptor.
     close(sockfd);
+
+    // Wait for RST flag
+    get_rst(info);
+
+
+    return 0;
+}
+
+/**
+ * @brief Uses libpcap to retrive the RST packet.
+ * 
+ * @param info the struct from the INI.
+ * @return int 0 for success and -1 for failure.
+ */
+int get_rst(struct ini_info *info) {
+    /* The var for the raw data of the packet */
+    const unsigned char *packet = NULL;
+    /* To Store network address and netmask */ 
+    bpf_u_int32 netaddr=0, mask=0;
+    /* Packet information (timestamp,size...) */ 
+    struct pcap_pkthdr packet_header;
+    /* Place to store the BPF filter program */
+    struct bpf_program filter;
+    /* Buffer for pcap errors */
+    char errbuf[PCAP_ERRBUF_SIZE];
+    /* The specified device interface from the INI */
+    char *dev = info->interface;
+    /* The device descriptor for libpcap */
+    pcap_t *dev_descriptor = NULL;
+
+    pcap_t *handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
+    if(handle == NULL) {
+        fprintf(stderr, "Couldn't open device %s: %s\n", dev, errbuf);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Look up info from the capture device. */ 
+    if(pcap_lookupnet(dev, &netaddr, &mask, errbuf) == -1 ){ 
+        fprintf(stderr, "ERROR: pcap_lookupnet(): %s\n", errbuf);
+        exit(EXIT_FAILURE);
+    }
+
+    /* Compiles the filter expression into a BPF filter program */
+    if(pcap_compile(dev_descriptor, &filter, "(tcp[13] == 0x10) or (tcp[13] == 0x18)", 1, mask) == -1){
+        fprintf(stderr, "Error in pcap_compile(): %s\n", pcap_geterr(dev));
+        exit(EXIT_FAILURE);
+    }
+    
+    /* Load the filter program into the packet capture device. */ 
+    if(pcap_setfilter(dev_descriptor, &filter) == -1 ){
+        fprintf(stderr, "Error in pcap_setfilter(): %s\n", pcap_geterr(dev));
+        exit(EXIT_FAILURE);
+    }
+
+    if((packet = pcap_next(dev_descriptor, &packet_header)) == NULL){
+        fprintf(stderr, "Error in pcap_next()\n", errbuf);
+        exit(EXIT_FAILURE);
+    }
+
+
+    struct ip *iphdr = (struct ip *)(packet+14);
+    struct tcphdr *tcphdr = (struct tcphdr *)(packet+14+20);
+    printf("+-------------------------+\n");
+    printf("   ACK: %u\n", ntohl(tcphdr->th_ack) ); 
+    printf("   SEQ: %u\n", ntohl(tcphdr->th_seq) );
+    printf("   DST IP: %s\n", inet_ntoa(iphdr->ip_dst)); 
+    printf("   SRC IP: %s\n", inet_ntoa(iphdr->ip_src)); 
+    printf("   SRC PORT: %d\n", ntohs(tcphdr->th_sport) ); 
+    printf("   DST PORT: %d\n", ntohs(tcphdr->th_dport) );
+    printf("+-------------------------+\n");
 
     return 0;
 }

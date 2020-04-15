@@ -6,7 +6,7 @@ SHARED=../shared-src/
 
 TARGET=standalone
 CC=gcc
-CFLAGS += -g -Wall -I "$(SHARED)" -lm -fPIC -DLOGGER=$(LOGGER)
+CFLAGS += -g -Wall -lpcap -I "$(SHARED)" -lm -fPIC -DLOGGER=$(LOGGER)
 
 # Source C files
 globalsrc= $(SHARED)ini_parser.c $(SHARED)next_token.c $(SHARED)msleep.c
