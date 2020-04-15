@@ -22,7 +22,6 @@
 
 #include "../shared-src/ini_parser.h"
 #include "../shared-src/structs.h"
-
 #include "create_hdrs.h"
 
 #define _GNU_SOURCE
@@ -31,6 +30,8 @@
 
 void set_ifr(struct ifreq *ifr, int *sockfd, char *interface_name);
 int get_rst(struct ini_info *info);
+int send_train(struct ini_info *info, struct udphdr *udphdr, struct ip *iphdr, int type, int *sockfd, uint8_t *ether_frame, struct sockaddr_ll *device);
+void fillTrain(char** train, unsigned short int num, unsigned int size, int type);
 
 /**
  * @brief This function helps set the ifreq for the networking interface.
@@ -65,6 +66,8 @@ void set_ifr(struct ifreq *ifr, int *sockfd, char *interface_name) {
     printf("Index for interface %s is %i\n", interface_name, ifr->ifr_ifindex);
 }
 
+
+
 int main(int argc, char **argv) {
     /* Parse our INI */
     struct ini_info *info = calloc(1, sizeof(struct ini_info));
@@ -78,7 +81,8 @@ int main(int argc, char **argv) {
     struct ifreq *ifr = calloc(1, sizeof(ifr));
 
     /* File descritor for the socket */
-    int sockfd;
+    int sockfd; // for TCP
+    int sd; // for UDP
 
     /* Define Flags */
     int *ip_flags;
@@ -87,22 +91,21 @@ int main(int argc, char **argv) {
     /* Set to toggle options in setsockopt() on or off */
     const int on = 1;
 
-    /* Definition of IP/TCP headers */
+    /* Definition of IP/TCP/UDP headers */
     struct ip iphdr;
     struct tcphdr tcphdr;
+    struct udphdr udphdr;
     struct addrinfo *resolved_target;
     struct sockaddr_in *ipv4;
     struct sockaddr_in sin;  // = calloc(1, sizeof(struct sockaddr_in));
 
     /* Allocate/Set memory for IP headers, flags, hints and other structs */
+    uint8_t *ether_frame = calloc(IP_MAXPACKET, sizeof(uint8_t));
     uint8_t *packet = calloc(IP_MAXPACKET, sizeof(uint8_t));
     struct addrinfo *hints = calloc(1, sizeof(struct addrinfo));
     ip_flags = calloc(4, sizeof(int));
     tcp_flags = calloc(8, sizeof(int));
     char *dst_ip = calloc(INET_ADDRSTRLEN, sizeof(char));
-
-
-
 
     /* ----------------- Initialization is done, now we create the IP Header ----------------- */
 
@@ -128,7 +131,6 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
     freeaddrinfo(resolved_target);
-
 
     /* --- IPv4 Header Stage --- */
     
@@ -179,8 +181,27 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    // Close socket descriptor.
+    // Submit request for a raw socket descriptor for UDP
+    if((sd = socket (PF_PACKET, SOCK_DGRAM, htons (ETH_P_ALL))) < 0) {
+        perror ("socket() failed ");
+        exit (EXIT_FAILURE);
+    }
+
+    struct sockaddr_ll device;
+
+    device.sll_family = AF_PACKET;
+    device.sll_protocol = htons (ETH_P_IP);
+    memcpy (device.sll_addr, "00000", 6);
+    device.sll_halen = 6;
+
+    if(send_train(info, &udphdr, &iphdr, 0, &sd, ether_frame, &device) != 0) {
+        perror("Sending train unsuccessful");
+        return -1;
+    }
+
+    // Close socket descriptors.
     close(sockfd);
+    close(sd);
 
     // Wait for RST flag
     get_rst(info);
@@ -253,4 +274,57 @@ int get_rst(struct ini_info *info) {
     printf("+-------------------------+\n");
 
     return 0;
+}
+
+int send_train(struct ini_info *info, struct udphdr *udphdr, struct ip* iphdr, int type, int *sockfd, uint8_t *ether_frame, struct sockaddr_ll *device) {
+    int frame_length = IP4_HDRLEN + UDP_HDRLEN + info->payload_size;
+    int bytes;
+
+    /* Filling up the trains with data */
+    char** low_train = (char**) calloc(info->payload_size, sizeof(char));
+    char** high_train = (char**) calloc(info->payload_size, sizeof(char));
+    fillTrain(low_train, info->packet_num, info->payload_size, 0);
+    fillTrain(low_train, info->packet_num, info->payload_size, 1);
+
+    create_udpheader(iphdr, udphdr, info, low_train[0]);
+
+    // IPv4 header
+    memcpy (ether_frame, &iphdr, IP4_HDRLEN);
+
+    // UDP header
+    memcpy (ether_frame + IP4_HDRLEN, udphdr, UDP_HDRLEN);
+
+    // UDP data
+    memcpy (ether_frame + IP4_HDRLEN + UDP_HDRLEN, low_train[0], info->payload_size);
+    
+    if((bytes = sendto (*sockfd, ether_frame, frame_length, 0, (struct sockaddr *) device, sizeof (device))) <= 0) {
+        perror ("UDP sendto()");
+        return -1;
+    }
+    return 0;
+}
+
+void fillTrain(char** train, unsigned short int num, unsigned int size, int type) {
+    //unsigned char low_byte;
+    //unsigned char high_byte;
+
+    if(type == 0) {
+        for(unsigned int i=0; i<num; i++) {
+            char *ptr = *(train+i);
+            for(int j=0; j<size; j++) {
+                *ptr = '0';
+                ptr++;
+            }
+        }
+    }
+    else {
+        FILE *fd = fopen("/dev/urandom", "r");
+        for(int i=0; i<num; i++) {
+            // Shift the start of the train over two bytes
+            fgets(train[i], size, fd);
+            train[i][0] = 'F';
+            train[i][1] = 'G';
+        }
+        fclose(fd);
+    }
 }
