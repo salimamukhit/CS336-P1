@@ -27,6 +27,7 @@
 // Define some constants.
 #define IP4_HDRLEN 20         // IPv4 header length
 #define TCP_HDRLEN 20         // TCP header length, excludes options data
+#define UDP_HDRLEN 8
 #define TCP_WINDOW_SIZE 65535
 
 /**
@@ -148,6 +149,74 @@ uint16_t tcp4_checksum(struct ip *iphdr, struct tcphdr *tcphdr) {
     ptr += sizeof (tcphdr->th_urp);
     chksumlen += sizeof (tcphdr->th_urp);
 
+    return checksum ((uint16_t *) buf, chksumlen);
+}
+
+uint16_t udp4_checksum (struct ip iphdr, struct udphdr udphdr, uint8_t *payload, int payloadlen) {
+    char buf[IP_MAXPACKET];
+    char *ptr;
+    int chksumlen = 0;
+    int i;
+
+    ptr = &buf[0];  // ptr points to beginning of buffer buf
+
+    // Copy source IP address into buf (32 bits)
+
+    memcpy (ptr, &iphdr.ip_src.s_addr, sizeof (iphdr.ip_src.s_addr));
+    ptr += sizeof (iphdr.ip_src.s_addr);
+    chksumlen += sizeof (iphdr.ip_src.s_addr);
+
+    // Copy destination IP address into buf (32 bits)
+    memcpy (ptr, &iphdr.ip_dst.s_addr, sizeof (iphdr.ip_dst.s_addr));
+    ptr += sizeof (iphdr.ip_dst.s_addr);
+    chksumlen += sizeof (iphdr.ip_dst.s_addr);
+
+    // Copy zero field to buf (8 bits)
+    *ptr = 0; ptr++;
+    chksumlen += 1;
+
+    // Copy transport layer protocol to buf (8 bits)
+    memcpy (ptr, &iphdr.ip_p, sizeof (iphdr.ip_p));
+    ptr += sizeof (iphdr.ip_p);
+    chksumlen += sizeof (iphdr.ip_p);
+
+    // Copy UDP length to buf (16 bits)
+    memcpy (ptr, &udphdr.len, sizeof (udphdr.len));
+    ptr += sizeof (udphdr.len);
+    chksumlen += sizeof (udphdr.len);
+
+    // Copy UDP source port to buf (16 bits)
+    memcpy (ptr, &udphdr.source, sizeof (udphdr.source));
+    ptr += sizeof (udphdr.source);
+    chksumlen += sizeof (udphdr.source);
+
+    // Copy UDP destination port to buf (16 bits)
+    memcpy (ptr, &udphdr.dest, sizeof (udphdr.dest));
+    ptr += sizeof (udphdr.dest);
+    chksumlen += sizeof (udphdr.dest);
+
+    // Copy UDP length again to buf (16 bits)
+    memcpy (ptr, &udphdr.len, sizeof (udphdr.len));
+    ptr += sizeof (udphdr.len);
+    chksumlen += sizeof (udphdr.len);
+
+    // Copy UDP checksum to buf (16 bits)
+    // Zero, since we don't know it yet
+    *ptr = 0; ptr++;
+    *ptr = 0; ptr++;
+    chksumlen += 2;
+
+    // Copy payload to buf
+    memcpy (ptr, payload, payloadlen);
+    ptr += payloadlen;
+    chksumlen += payloadlen;
+
+    // Pad to the next 16-bit boundary
+    for (i = 0; i < payloadlen%2; i++, ptr++) {
+        *ptr = 0;
+        ptr++;
+        chksumlen++;
+    }
     return checksum ((uint16_t *) buf, chksumlen);
 }
 
@@ -292,5 +361,22 @@ int create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *i
     // TCP checksum (16 bits)
     tcphdr->th_sum = tcp4_checksum(iphdr, tcphdr);
 
+    return 0;
+}
+
+/**
+ * @brief Creates and fills out a UDP header.
+ * 
+ * @param ipheader pointer to an ip header with which udp header is associated
+ * @param udpheader pointer to a udp header to be filled
+ * @param info configurations
+ * @param data payload
+ * @return 0 which is success
+ */
+int create_udpheader(struct ip* iphdr, struct udphdr* udpheader, struct ini_info* info, char* data) {
+    udpheader->source = htons(info->train_udp.udph_srcport);
+    udpheader->dest = htons(info->train_udp.udph_destport);
+    udpheader->len = info->payload_size + UDP_HDRLEN;
+    udpheader->check = udp4_checksum(iphdr, udpheader, data, info->payload_size);
     return 0;
 }
