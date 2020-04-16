@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
     // TODO send a second train
 
     /* Send second TCP packet and collect RST packet */
-    //send_tcp(info, TAIL_TCP_NO);
+    send_tcp(info, TAIL_TCP_NO);
     LOGP("SECOND TCP\n");
 
     return 0;

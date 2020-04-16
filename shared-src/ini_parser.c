@@ -59,6 +59,11 @@ int parse_ini(struct ini_info *parsed_info) {
     if(fp == NULL) {
         return -1;
     }
+
+    /* Set Defaults */
+    parsed_info->payload_size = 1000;
+    parsed_info->meas_time = 15;
+    parsed_info->packet_num = 600;
     
     char line_arr[256] = { 0 };
     while(fgets(line_arr, 256, fp) != NULL) {
