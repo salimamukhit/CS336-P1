@@ -21,6 +21,8 @@ received.ini
 recieved_config.ini
 recieved.ini
 
+solo_config.ini
+
 # Ignore everything in the ./bin folder
 bin*
 
@@ -28,7 +30,16 @@ bin*
 GPATH
 GRTAGS
 GTAGS
+
 udp4_cooked.c
-soloclient-src/standalone
 soloclient-src/solo_config_loopback.ini
+udp4_cooked
+soloclient-src/standalone
 soloclient-src/solo_config.ini
+
+./udp4_cooked.c
+./soloclient-src/solo_config_loopback.ini
+./udp4_cooked
+./soloclient-src/standalone
+./soloclient-src/solo_config.ini
+

@@ -28,6 +28,8 @@
 // Define some constants.
 #define IP4_HDRLEN 20         // IPv4 header length
 #define TCP_HDRLEN 20         // TCP header length, excludes options data
+#define UDP_HDRLEN 8
+#define TCP_WINDOW_SIZE 65535
 
 /**
  * @brief Computes the internet checksum (RFC 1071) for the IP Header.
@@ -46,7 +48,7 @@ uint16_t checksum(uint16_t *addr, int len);
  * @param ttl the time to live for the packet.
  * @return int 0 for success and -1 for failure.
  */
-int create_ipheader(struct ip *iphdr, struct ini_info *info, u_int8_t ttl);
+int create_ipheader(struct ip *iphdr, struct ini_info *info, u_int8_t ttl, int type);
 
 /**
  * @brief Creates and fills out a TCP Header.
@@ -57,5 +59,7 @@ int create_ipheader(struct ip *iphdr, struct ini_info *info, u_int8_t ttl);
  * @return int 0 for success and -1 for failure.
  */
 int create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *info);
+
+int create_udpheader(struct ip* iphdr, struct udphdr* udpheader, struct ini_info* info, unsigned char *data);
 
 #endif

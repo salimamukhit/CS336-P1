@@ -113,5 +113,3 @@ int receive_results(unsigned short int port, struct ini_info *info, double *low_
     close(sockfd);
     return 0;
 }
-
-

@@ -11,6 +11,7 @@
 #include <sys/types.h>        // needed for socket(), uint8_t, uint16_t, uint32_t
 #include <sys/socket.h>       // needed for socket()
 #include <netinet/in.h>       // IPPROTO_RAW, IPPROTO_IP, IPPROTO_TCP, INET_ADDRSTRLEN
+#include <netinet/udp.h>
 #include <netinet/ip.h>       // struct ip and IP_MAXPACKET (which is 65535)
 #define __FAVOR_BSD           // Use BSD format of tcp header
 #include <netinet/tcp.h>      // struct tcphdr
@@ -31,13 +32,20 @@
 #define TCP_WINDOW_SIZE 65535
 
 /* Pseudoheader (Used to compute TCP checksum. Check RFC 793) */
-typedef struct pseudoheader {
+typedef struct tcp_pseudoheader {
     u_int32_t src;
     u_int32_t dst;
     unsigned char zero;
     unsigned char protocol;
     u_int16_t tcplen;
 } tcp_phdr_t;
+
+/* Pseudoheader (Used to compute UDP checksum) */
+typedef struct udp_pseudoheader {
+    u_int32_t src;
+    u_int32_t dst;
+    u_int16_t udplen;
+} udp_phdr_t;
 
 /**
  * @brief Computes the internet checksum (RFC 1071) for the IP Header.
@@ -100,72 +108,26 @@ uint16_t tcp4_checksum(struct ip *iphdr, struct tcphdr *tcphdr) {
     return 0;
 }
 
-uint16_t udp4_checksum (struct ip iphdr, struct udphdr udphdr, uint8_t *payload, int payloadlen) {
-    char buf[IP_MAXPACKET];
-    char *ptr;
-    int chksumlen = 0;
-    int i;
+uint16_t udp4_checksum(struct ip *iphdr, struct udphdr *udphdr, uint8_t *payload, int payloadlen) {
+    /* UDP Pseudoheader (used in checksum)    */
+    udp_phdr_t pseudohdr;
 
-    ptr = &buf[0];  // ptr points to beginning of buffer buf
+    /* UDP Pseudoheader + UDP actual header used for computing the checksum */
+    char udpcsumblock[sizeof(udp_phdr_t) + UDP_HDRLEN];
 
-    // Copy source IP address into buf (32 bits)
+    /* Fill the pseudoheader so we can compute the UDP checksum*/
+    pseudohdr.src = iphdr->ip_src.s_addr;
+    pseudohdr.dst = iphdr->ip_dst.s_addr;
+    pseudohdr.udplen = htons(sizeof(struct udphdr) + payloadlen);
 
-    memcpy (ptr, &iphdr.ip_src.s_addr, sizeof (iphdr.ip_src.s_addr));
-    ptr += sizeof (iphdr.ip_src.s_addr);
-    chksumlen += sizeof (iphdr.ip_src.s_addr);
+    /* Copy header and pseudoheader to a buffer to compute the checksum */  
+    memcpy(udpcsumblock, &pseudohdr, sizeof(udp_phdr_t));   
+    memcpy((udpcsumblock + sizeof(udp_phdr_t)), udphdr, sizeof(struct udphdr));
+        
+    /* Compute the UDP checksum as the standard says */
+    udphdr->len = checksum((unsigned short *)(udpcsumblock), sizeof(udpcsumblock));
 
-    // Copy destination IP address into buf (32 bits)
-    memcpy (ptr, &iphdr.ip_dst.s_addr, sizeof (iphdr.ip_dst.s_addr));
-    ptr += sizeof (iphdr.ip_dst.s_addr);
-    chksumlen += sizeof (iphdr.ip_dst.s_addr);
-
-    // Copy zero field to buf (8 bits)
-    *ptr = 0; ptr++;
-    chksumlen += 1;
-
-    // Copy transport layer protocol to buf (8 bits)
-    memcpy (ptr, &iphdr.ip_p, sizeof (iphdr.ip_p));
-    ptr += sizeof (iphdr.ip_p);
-    chksumlen += sizeof (iphdr.ip_p);
-
-    // Copy UDP length to buf (16 bits)
-    memcpy (ptr, &udphdr.len, sizeof (udphdr.len));
-    ptr += sizeof (udphdr.len);
-    chksumlen += sizeof (udphdr.len);
-
-    // Copy UDP source port to buf (16 bits)
-    memcpy (ptr, &udphdr.source, sizeof (udphdr.source));
-    ptr += sizeof (udphdr.source);
-    chksumlen += sizeof (udphdr.source);
-
-    // Copy UDP destination port to buf (16 bits)
-    memcpy (ptr, &udphdr.dest, sizeof (udphdr.dest));
-    ptr += sizeof (udphdr.dest);
-    chksumlen += sizeof (udphdr.dest);
-
-    // Copy UDP length again to buf (16 bits)
-    memcpy (ptr, &udphdr.len, sizeof (udphdr.len));
-    ptr += sizeof (udphdr.len);
-    chksumlen += sizeof (udphdr.len);
-
-    // Copy UDP checksum to buf (16 bits)
-    // Zero, since we don't know it yet
-    *ptr = 0; ptr++;
-    *ptr = 0; ptr++;
-    chksumlen += 2;
-
-    // Copy payload to buf
-    memcpy (ptr, payload, payloadlen);
-    ptr += payloadlen;
-    chksumlen += payloadlen;
-
-    // Pad to the next 16-bit boundary
-    for (i = 0; i < payloadlen%2; i++, ptr++) {
-        *ptr = 0;
-        ptr++;
-        chksumlen++;
-    }
-    return checksum ((uint16_t *) buf, chksumlen);
+    return 0;
 }
 
 /**
@@ -174,9 +136,10 @@ uint16_t udp4_checksum (struct ip iphdr, struct udphdr udphdr, uint8_t *payload,
  * @param iphdr the ip header to be filled.
  * @param info the parsed INI.
  * @param ttl the time to live for the packet.
+ * @param type 0 for TCP, 1 for UDP
  * @return int 0 for success and -1 for failure.
  */
-int create_ipheader(struct ip *iphdr, struct ini_info *info, u_int8_t ttl) {
+int create_ipheader(struct ip *iphdr, struct ini_info *info, u_int8_t ttl, int type) {
     int ip_flags[4] = { 0 };
 
     // IPv4 header length (4 bits): Number of 32-bit words in header = 5
@@ -188,8 +151,21 @@ int create_ipheader(struct ip *iphdr, struct ini_info *info, u_int8_t ttl) {
     // Type of service (8 bits)
     iphdr->ip_tos = 0;
 
-    // Total length of datagram (16 bits): IP header + TCP header
-    iphdr->ip_len = htons(IP4_HDRLEN + TCP_HDRLEN);
+    // Total length of datagram (16 bits): IP header + TCP/UDP header
+    // Transport layer protocol (8 bits): 6 for TCP, 8 for UDP
+    if(type == 0) {
+        iphdr->ip_len = htons(IP4_HDRLEN + TCP_HDRLEN);
+        iphdr->ip_p = IPPROTO_TCP;
+    }
+    else if(type == 1) {
+        iphdr->ip_len = htons(IP4_HDRLEN + UDP_HDRLEN + info->payload_size);
+        iphdr->ip_p = IPPROTO_UDP;
+    }
+    else {
+        fprintf(stderr, "Bad type value for protocol!\n");
+        exit(EXIT_FAILURE);
+    }
+    
 
     // ID sequence number (16 bits): unused, since single datagram
     iphdr->ip_id = htons(0);
@@ -215,9 +191,6 @@ int create_ipheader(struct ip *iphdr, struct ini_info *info, u_int8_t ttl) {
 
     // Time-to-Live (8 bits): default to maximum value
     iphdr->ip_ttl = ttl;
-
-    // Transport layer protocol (8 bits): 6 for TCP
-    iphdr->ip_p = IPPROTO_TCP;
 
     int status;
     // Source IPv4 address (32 bits)
@@ -322,10 +295,11 @@ int create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *i
  * @param data payload
  * @return 0 which is success
  */
-int create_udpheader(struct ip* iphdr, struct udphdr* udpheader, struct ini_info* info, char* data) {
+int create_udpheader(struct ip* iphdr, struct udphdr* udpheader, struct ini_info* info, unsigned char *data) {
     udpheader->source = htons(info->train_udp.udph_srcport);
     udpheader->dest = htons(info->train_udp.udph_destport);
     udpheader->len = info->payload_size + UDP_HDRLEN;
-    udpheader->check = udp4_checksum(iphdr, udpheader, data, info->payload_size);
+    udpheader->check = 0;
+    udp4_checksum(iphdr, udpheader, data, 0);
     return 0;
 }
