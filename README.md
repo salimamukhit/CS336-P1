@@ -18,7 +18,7 @@ Go to configuration file config.ini. It is located in client-src folder. If you 
 
 -------------------- Standalone Application --------------------
 
-Go to configuration file solo-config.ini. It is located in soloclient-src. If you open it, you can see all the configurations needed for this part of the project. In a line which starts with ClientIP you will have to provide your IP address. To get it you can use a ip a command in Terminal. The Destination IP for the standalone is 107.180.95.33 which is our VMS. 
+Go to configuration file solo-config.ini. It is located in soloclient-src. If you open it, you can see all the configurations needed for this part of the project. In a line which starts with ClientIP you will have to provide your IP address. To get it you can use a ip a command in Terminal. You should also be able to extract your interface for your device. You will have to write it to the Interface field in configuration file. The Destination IP for the standalone is 107.180.95.33 which is our VMS. 
 
 We used libpcap library to capture RST packets. If you do not have it installed on your machine, in your Terminal run sudo apt install libpcap-dev
 
