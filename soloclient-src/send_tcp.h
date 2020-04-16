@@ -25,6 +25,6 @@
 
 #include "../shared-src/structs.h"
 
-send_tcp(struct ini_info *info, unsigned int packet_no);
+int send_tcp(struct ini_info *info, unsigned int packet_no);
 
 #endif

@@ -27,6 +27,8 @@
 #include "create_hdrs.h"
 #include "sniff_rst.h"
 
+#define TCP 0
+
 void set_ifr(struct ifreq *ifr, int *sockfd, char *interface_name);
 
 /**
@@ -71,11 +73,6 @@ int send_tcp(struct ini_info *info, unsigned int packet_no) {
 
     /* File descritor for the socket */
     int sockfd; // for TCP
-    int sd; // for UDP
-
-    /* Define Flags */
-    int *ip_flags;
-    int *tcp_flags;
 
     /* Set to toggle options in setsockopt() on or off */
     const int on = 1;
@@ -83,7 +80,6 @@ int send_tcp(struct ini_info *info, unsigned int packet_no) {
     /* Definition of IP/TCP/UDP headers */
     struct ip iphdr;
     struct tcphdr tcphdr;
-    struct udphdr udphdr;
     struct addrinfo *resolved_target;
     struct sockaddr_in *ipv4;
     struct sockaddr_in sin;  // = calloc(1, sizeof(struct sockaddr_in));
@@ -91,8 +87,6 @@ int send_tcp(struct ini_info *info, unsigned int packet_no) {
     /* Allocate/Set memory for IP headers, flags, hints and other structs */
     uint8_t *packet = calloc(IP_MAXPACKET, sizeof(uint8_t));
     struct addrinfo *hints = calloc(1, sizeof(struct addrinfo));
-    ip_flags = calloc(4, sizeof(int));
-    tcp_flags = calloc(8, sizeof(int));
     char *dst_ip = calloc(INET_ADDRSTRLEN, sizeof(char));
 
     /* ----------------- Initialization is done, now we create the IP Header ----------------- */
@@ -122,7 +116,7 @@ int send_tcp(struct ini_info *info, unsigned int packet_no) {
 
     /* --- IPv4 Header Stage --- */
     
-    create_ipheader(&iphdr, info, 255);
+    create_ipheader(&iphdr, info, 255, TCP);
 
     /* --- TCP Header Stage --- */
 
