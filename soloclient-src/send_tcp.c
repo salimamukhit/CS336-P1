@@ -28,6 +28,9 @@
 #include "sniff_rst.h"
 
 #define TCP 0
+#define HEAD 0
+#define TAIL 1
+#define WAIT_SERVER 10
 
 void set_ifr(struct ifreq *ifr, int *sockfd, char *interface_name);
 
@@ -64,6 +67,14 @@ void set_ifr(struct ifreq *ifr, int *sockfd, char *interface_name) {
     printf("Index for interface %s is %i\n", interface_name, ifr->ifr_ifindex);
 }
 
+/**
+ * @brief Sends a TCP packet using RAW SOCKETS. This can only be used for head and tail packets.
+ *        It also handles reciving the RST packet.
+ * 
+ * @param info the struct with the info from the INI.
+ * @param packet_no either 0 for head or 1 for tail. Other values will break this.
+ * @return int 0 on success and -1 on failure.
+ */
 int send_tcp(struct ini_info *info, unsigned int packet_no) {
     /* Error Status Tracking */
     int status;
@@ -109,7 +120,7 @@ int send_tcp(struct ini_info *info, unsigned int packet_no) {
     void *tmp = &(ipv4->sin_addr);
     if(inet_ntop(AF_INET, tmp, dst_ip, INET_ADDRSTRLEN) == NULL) {
         status = errno;
-        fprintf(stderr, "inet_ntop() failed.\nError message: %s", strerror (status));
+        fprintf(stderr, "inet_ntop() failed.\nError message: %s", strerror(status));
         exit(EXIT_FAILURE);
     }
     freeaddrinfo(resolved_target);
@@ -120,8 +131,19 @@ int send_tcp(struct ini_info *info, unsigned int packet_no) {
 
     /* --- TCP Header Stage --- */
 
-    create_tcpheader(&iphdr, &tcphdr, info);
-
+    if(packet_no == HEAD) {
+        create_tcpheader(&iphdr, &tcphdr, info, info->head_port);
+    }
+    else if(packet_no == TAIL) {
+        create_tcpheader(&iphdr, &tcphdr, info, info->tail_port);
+    }
+    else {
+        fprintf(stderr, "Unsupported packet number (1 or 0 only). Exiting now!\n");
+        free(packet);
+        free(hints);
+        free(dst_ip);
+        exit(EXIT_FAILURE);
+    }
 
     /* --- Prepare the packet --- */
 
@@ -139,8 +161,11 @@ int send_tcp(struct ini_info *info, unsigned int packet_no) {
     sin.sin_addr.s_addr = iphdr.ip_dst.s_addr;
 
     // Submit request for a raw socket descriptor.
-    if((sockfd = socket (AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) {
+    if((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) {
         perror("socket() failed ");
+        free(packet);
+        free(hints);
+        free(dst_ip);
         exit(EXIT_FAILURE);
     }
 
@@ -148,41 +173,51 @@ int send_tcp(struct ini_info *info, unsigned int packet_no) {
     // Set flag so socket expects us to provide IPv4 header.
     if(setsockopt(sockfd, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
         perror("setsockopt() failed to set IP_HDRINCL ");
+        free(packet);
+        free(hints);
+        free(dst_ip);
         exit(EXIT_FAILURE);
     }
 
     // Bind socket to interface index.
     if(setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, ifr, sizeof(*ifr)) < 0) {
         perror("setsockopt() failed to bind to interface ");
+        free(packet);
+        free(hints);
+        free(dst_ip);
         exit(EXIT_FAILURE);
     }
 
-    pid_t my_pid = getpid();
-    printf("Starting up, my PID is %d\n", my_pid);
+    /* Now we need to sniff for the RST packet while the TCP packet is being sent */
+
     pid_t child = fork();
-    if (child == 0) {
-        /* I am the child */
-        pid_t my_pid = getpid();
-        printf("Hello from the child! PID = %d. Going to sleep.\n", my_pid);
+    if(child == 0) {
         // Wait for RST flag
         get_rst(info);
-    } else if (child == -1) {
+        printf("Retrieved RST Packet :P\n");
+    } else if(child == -1) {
         /* Something went wrong */
-        perror("fork");
+        perror("fork ");
+        free(packet);
+        free(hints);
+        free(dst_ip);
+        exit(EXIT_FAILURE);
     } else {
-        /* I am the parent */
-        pid_t my_pid = getpid();
-        printf("Hello from the parent! PID = %d\n", my_pid);
-        printf("PID %d waiting for its child (%d)!\n", my_pid, child);
         // Send packet.
         if(sendto(sockfd, packet, IP4_HDRLEN + TCP_HDRLEN, 0, (const struct sockaddr *) &sin, sizeof(struct sockaddr)) < 0)  {
             perror("sendto() failed ");
+            free(packet);
+            free(hints);
+            free(dst_ip);
             exit(EXIT_FAILURE);
         }
-        LOGP("Sent TCP Packet :)\n");
+        printf("Sent TCP Packet :)\n");
         wait(&child);
-        printf("Child finished executing. Parent exiting.\n");
     }
+
+    free(packet);
+    free(hints);
+    free(dst_ip);
 
     close(sockfd);
 

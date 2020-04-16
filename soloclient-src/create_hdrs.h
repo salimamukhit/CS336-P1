@@ -56,9 +56,10 @@ int create_ipheader(struct ip *iphdr, struct ini_info *info, u_int8_t ttl, int t
  * @param iphdr the filled out IP Header.
  * @param tcphdr the TCP header to be filled.
  * @param info the parsed INI.
+ * @param dest_port the destination port.
  * @return int 0 for success and -1 for failure.
  */
-int create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *info);
+int create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *info, u_int16_t dest_port);
 
 int create_udpheader(struct ip* iphdr, struct udphdr* udpheader, struct ini_info* info, unsigned char *data);
 

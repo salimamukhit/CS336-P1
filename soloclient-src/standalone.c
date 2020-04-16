@@ -49,9 +49,10 @@ int main(int argc, char **argv) {
     strcpy(info->file_name, INI_NAME);
     parse_ini(info);
 
+    /* Send first TCP packet and collect RST packet */
     send_tcp(info, HEAD_TCP_NO);
 
-    /* ----------------- TCP was sent now we can work on UDP ----------------- */
+    /* TCP was sent now we can work on UDP */
 
     send_udp(info, 0);
 

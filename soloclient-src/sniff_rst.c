@@ -3,9 +3,11 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h>
 
 #include <pcap.h>
 
+#include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -27,27 +29,30 @@
 
 /* ethernet headers are always exactly 14 bytes */
 #define SIZE_ETHERNET 14
+/* Determine how long to wait for the server */
+#define SERVER_WAIT_TIME 10
+
+/* Session handle */
+static pcap_t *handle = NULL;
+
+void alarm_handler(int sig) {
+    if(handle != NULL) pcap_breakloop(handle);
+}
 
 /**
- * @brief Handles a packet
+ * @brief Handles the retrieval of the RST packet.
  * 
- * @param args 
+ * @param args arguments.
  * @param header 
  * @param packet 
  */
 void packet_handler(unsigned char *args, const struct pcap_pkthdr *header, const unsigned char *packet) {
-
-	static int count = 1;                   /* packet counter */
-	
 	/* declare pointers to packet headers */
 	const struct sniff_ip *ip;              /* The IP header */
 	const struct sniff_tcp *tcp;            /* The TCP header */
 
 	int size_ip;
 	int size_tcp;
-	
-	printf("\nPacket number %d:\n", count);
-	count++;
 	
 	/* define/compute ip header offset */
 	ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
@@ -87,7 +92,7 @@ void packet_handler(unsigned char *args, const struct pcap_pkthdr *header, const
 	/* define/compute tcp header offset */
 	tcp = (struct sniff_tcp*)(packet + SIZE_ETHERNET + size_ip);
 	size_tcp = TH_OFF(tcp)*4;
-	if (size_tcp < 20) {
+	if(size_tcp < 20) {
 		printf("   * Invalid TCP header length: %u bytes\n", size_tcp);
 		return;
 	}
@@ -105,7 +110,10 @@ void packet_handler(unsigned char *args, const struct pcap_pkthdr *header, const
  * @return int 0 for success and -1 for failure.
  */
 int get_rst(struct ini_info *info) {
-    pcap_t *handle;			        /* Session handle */
+    /* Setup an alarm to break to stop the pcap_loop() */
+    alarm(SERVER_WAIT_TIME);
+    signal(SIGALRM, alarm_handler);
+
     char errbuf[PCAP_ERRBUF_SIZE];	/* Error string */
     struct bpf_program fp;		    /* The compiled filter */
     char filter_exp[1024] = { 0 };  /* The filter expression */
@@ -142,9 +150,19 @@ int get_rst(struct ini_info *info) {
         fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(handle));
         return(2);
     }
-    int num_packets = 1;
 
-    pcap_loop(handle, num_packets, packet_handler, NULL);
+    int status = pcap_loop(handle, 1, packet_handler, NULL);
+    if(status == PCAP_ERROR_BREAK) {
+        pcap_freecode(&fp);
+        pcap_close(handle);
+        fprintf(stderr, "SERVER_WAIT_TIME: '%d' exceeded!\n", (int) SERVER_WAIT_TIME);
+        fprintf(stderr, "Server failed to respond! Exiting now!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* cleanup */
+    pcap_freecode(&fp);
+    pcap_close(handle);
 
     return 0;
 }

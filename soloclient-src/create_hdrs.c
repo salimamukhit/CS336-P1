@@ -218,16 +218,17 @@ int create_ipheader(struct ip *iphdr, struct ini_info *info, u_int8_t ttl, int t
  * @param iphdr the filled out IP Header.
  * @param tcphdr the TCP header to be filled.
  * @param info the parsed INI.
+ * @param dest_port the destination port.
  * @return int 0 for success and -1 for failure.
  */
-int create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *info) {
+int create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *info, u_int16_t dest_port) {
     int tcp_flags[8] = { 0 };
 
     // Source port number (16 bits)
-    tcphdr->th_sport = htons(info->server_port);  // 60
+    tcphdr->th_sport = htons(info->server_port);
 
     // Destination port number (16 bits)
-    tcphdr->th_dport = htons(info->head_port);  //80
+    tcphdr->th_dport = htons(dest_port);
 
     // Sequence number (32 bits)
     tcphdr->th_seq = htonl(0);
