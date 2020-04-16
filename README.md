@@ -14,7 +14,7 @@ Go to configuration file config.ini. It is located in client-src folder. If you 
 
 3) In server-src you can see that the file received-config.ini appeared. This is the result of client sending the configuration file to the server.
 
-4) The Part_One.pcap includes the packets captured.
+4) The client-server.pcap includes the packets captured.
 
 -------------------- Standalone Application --------------------
 
@@ -22,7 +22,7 @@ Go to configuration file solo-config.ini. It is located in soloclient-src. If yo
 
 1) In your terminal you should open a soloclient-src folder. Run make command which will compile a standalone application. Then run the program with sudo ./standalone. 
 
-2) The Part_Two.pcap includes the packets that were sent through this application. Apply a filter ip.addr == 107.180.95.33 in order to see only those packets that were sent by this app. 
+2) The standalone.pcap includes the packets that were sent through this application.
 
 -------------------- Additional Information --------------------
 
