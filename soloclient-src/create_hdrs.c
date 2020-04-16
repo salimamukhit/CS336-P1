@@ -1,5 +1,5 @@
 /**
-* @file Handles the creation of the IP header.
+* @file Handles the creation of the IP/UDP/TCP headers.
 */
 
 #include <stdio.h>
@@ -7,27 +7,27 @@
 #include <unistd.h>
 #include <string.h>
 
-#include <netdb.h>            // struct addrinfo
-#include <sys/types.h>        // needed for socket(), uint8_t, uint16_t, uint32_t
-#include <sys/socket.h>       // needed for socket()
-#include <netinet/in.h>       // IPPROTO_RAW, IPPROTO_IP, IPPROTO_TCP, INET_ADDRSTRLEN
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <netinet/udp.h>
-#include <netinet/ip.h>       // struct ip and IP_MAXPACKET (which is 65535)
-#define __FAVOR_BSD           // Use BSD format of tcp header
-#include <netinet/tcp.h>      // struct tcphdr
-#include <arpa/inet.h>        // inet_pton() and inet_ntop()
-#include <sys/ioctl.h>        // macro ioctl is defined
-#include <bits/ioctls.h>      // defines values for argument "request" of ioctl.
-#include <net/if.h>           // struct ifreq
+#include <netinet/ip.h>
+#define __FAVOR_BSD
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
+#include <sys/ioctl.h>
+#include <bits/ioctls.h>
+#include <net/if.h>
 
-#include <errno.h>            // errno, perror()
+#include <errno.h>
 
 #include "../shared-src/structs.h"
 #include "create_hdrs.h"
 
 // Define some constants.
-#define IP4_HDRLEN 20         // IPv4 header length
-#define TCP_HDRLEN 20         // TCP header length, excludes options data
+#define IP4_HDRLEN 20 // IPv4 header length
+#define TCP_HDRLEN 20 // TCP header length, excludes options data
 #define UDP_HDRLEN 8
 #define TCP_WINDOW_SIZE 65535
 
@@ -140,6 +140,9 @@ uint16_t udp4_checksum(struct ip *iphdr, struct udphdr *udphdr, uint8_t *payload
  * @return int 0 for success and -1 for failure.
  */
 int create_ipheader(struct ip *iphdr, struct ini_info *info, u_int8_t ttl, int type) {
+    if(info == NULL) {
+        return -1;
+    }
     int ip_flags[4] = { 0 };
 
     // IPv4 header length (4 bits): Number of 32-bit words in header = 5
@@ -221,6 +224,9 @@ int create_ipheader(struct ip *iphdr, struct ini_info *info, u_int8_t ttl, int t
  * @return int 0 for success and -1 for failure.
  */
 int create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *info) {
+    if(info == NULL) {
+        return -1;
+    }
     int tcp_flags[8] = { 0 };
 
     // Source port number (16 bits)
@@ -293,13 +299,18 @@ int create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *i
  * @param udpheader pointer to a udp header to be filled
  * @param info configurations
  * @param data payload
- * @return 0 which is success
+ * @return 0 for success and -1 for failure
  */
 int create_udpheader(struct ip* iphdr, struct udphdr* udpheader, struct ini_info* info, unsigned char *data) {
+    if(info == NULL) {
+        return -1;
+    }
+
     udpheader->source = htons(info->train_udp.udph_srcport);
     udpheader->dest = htons(info->train_udp.udph_destport);
     udpheader->len = info->payload_size + UDP_HDRLEN;
     udpheader->check = 0;
     udp4_checksum(iphdr, udpheader, data, 0);
+
     return 0;
 }
