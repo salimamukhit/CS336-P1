@@ -19,18 +19,18 @@
 
 #include "../shared-src/ini_parser.h"
 #include "../shared-src/structs.h"
+#include "../shared-src/msleep.h"
+#include "../shared-src/logger.h"
 #include "create_hdrs.h"
 
 #define _GNU_SOURCE
-//#define INTERFACE "enp4s0" // Erik
-//"wlp7s0" //Salima
 #define INI_NAME "solo_config.ini"
-//#define MY_IP "192.168.42.162"
-//#define TARGET_IP "10.0.2.15"  //"107.180.95.33" // VPS IP
+#define TCP_TYPE_NO 0
+#define UDP_TYPE_NO 1
 
+int send_udp(struct ini_info *info, int type);
 void set_ifr(struct ifreq *ifr, int *sockfd, char *interface_name);
-int send_train(struct ini_info *info, struct udphdr *udphdr, struct ip *iphdr, int type, int *sockfd, uint8_t *ether_frame, struct sockaddr_ll *device);
-void fillTrain(char** train, unsigned short int num, unsigned int size, int type);
+void fillTrain(unsigned char** train, unsigned short int num, unsigned int size, int type);
 
 /**
  * @brief This function helps set the ifreq for the networking interface.
@@ -81,7 +81,6 @@ int main(int argc, char **argv) {
 
     /* File descritor for the socket */
     int sockfd; // for TCP
-    int sd; // for UDP
 
     /* Define Flags */
     int *ip_flags;
@@ -93,13 +92,11 @@ int main(int argc, char **argv) {
     /* Definition of IP/TCP/UDP headers */
     struct ip iphdr;
     struct tcphdr tcphdr;
-    struct udphdr udphdr;
     struct addrinfo *resolved_target;
     struct sockaddr_in *ipv4;
     struct sockaddr_in sin;  // = calloc(1, sizeof(struct sockaddr_in));
 
     /* Allocate/Set memory for IP headers, flags, hints and other structs */
-    uint8_t *ether_frame = calloc(IP_MAXPACKET, sizeof(uint8_t));
     uint8_t *packet = calloc(IP_MAXPACKET, sizeof(uint8_t));
     struct addrinfo *hints = calloc(1, sizeof(struct addrinfo));
     ip_flags = calloc(4, sizeof(int));
@@ -133,12 +130,11 @@ int main(int argc, char **argv) {
 
     /* --- IPv4 Header Stage --- */
     
-    create_ipheader(&iphdr, info, 255);
+    create_ipheader(&iphdr, info, 255, TCP_TYPE_NO);
 
     /* --- TCP Header Stage --- */
 
     create_tcpheader(&iphdr, &tcphdr, info);
-
 
     /* --- Prepare the packet --- */
 
@@ -179,67 +175,195 @@ int main(int argc, char **argv) {
         perror("sendto() failed ");
         exit(EXIT_FAILURE);
     }
+    
+    close(sockfd);
 
-    // Submit request for a raw socket descriptor for UDP
-    if((sd = socket (PF_PACKET, SOCK_DGRAM, htons (ETH_P_ALL))) < 0) {
+    /* ----------------- TCP was sent now we can work on UDP ----------------- */
+
+    send_udp(info, 0);
+
+    return 0;
+}
+
+int send_udp(struct ini_info *info, int type) {
+    int i, status, datalen, packet_len, sd, bytes, *ip_flags;
+    char *interface, *target, *src_ip, *dst_ip;
+    unsigned char *data;
+    struct ip iphdr;
+    struct udphdr udphdr;
+    uint8_t *src_mac, *dst_mac, *udp_packet;
+    struct addrinfo hints, *res;
+    struct sockaddr_in *ipv4;
+    struct sockaddr_ll device;
+    struct ifreq ifr;
+    void *tmp;
+    unsigned char** train;
+
+    // Allocate memory for various arrays.
+    src_mac = calloc(6, sizeof(char));
+    dst_mac = calloc(6, sizeof(char));
+    data = calloc(info->payload_size, sizeof(unsigned char));
+    udp_packet = calloc(IP_MAXPACKET, sizeof(unsigned char));
+    interface = calloc(40, sizeof(unsigned char));
+    target = calloc(40, sizeof(char));
+    src_ip = calloc(INET_ADDRSTRLEN, sizeof(char));
+    dst_ip = calloc(INET_ADDRSTRLEN, sizeof(char));
+    ip_flags = calloc(4, sizeof(int));
+    train = calloc(info->packet_num, sizeof(unsigned char*));
+
+    memset(&udphdr, 0, sizeof(udphdr));
+
+    for(i = 0; i < info->packet_num; i++) {
+        *(train + i) = calloc(info->payload_size, sizeof(unsigned char));
+    }
+
+    // Fill Trains
+
+    fillTrain(train, info->packet_num, info->payload_size, type);
+    // Interface to send packet through.
+    strcpy (interface, info->interface);
+
+    // Submit request for a socket descriptor to look up interface.
+    if ((sd = socket (AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) {
+        perror ("socket() failed to get socket descriptor for using ioctl() ");
+        exit (EXIT_FAILURE);
+    }
+
+    // Use ioctl() to look up interface name and get its MAC address.
+    memset (&ifr, 0, sizeof (ifr));
+    snprintf (ifr.ifr_name, sizeof (ifr.ifr_name), "%s", interface);
+    if (ioctl (sd, SIOCGIFHWADDR, &ifr) < 0) {
+        perror ("ioctl() failed to get source MAC address ");
+        return (EXIT_FAILURE);
+    }
+    close (sd);
+
+    // Find interface index from interface name and store index in
+    // struct sockaddr_ll device, which will be used as an argument of sendto().
+    memset (&device, 0, sizeof (device));
+    if ((device.sll_ifindex = if_nametoindex (interface)) == 0) {
+        perror ("if_nametoindex() failed to obtain interface index ");
+        exit (EXIT_FAILURE);
+    }
+    // printf ("Index for interface %s is %i\n", interface, device.sll_ifindex);
+
+    // Set destination MAC address: you need to fill this out
+    dst_mac[0] = 0xff;
+    dst_mac[1] = 0xff;
+    dst_mac[2] = 0xff;
+    dst_mac[3] = 0xff;
+    dst_mac[4] = 0xff;
+    dst_mac[5] = 0xff;
+
+    // Source IPv4 address: you need to fill this out
+    strcpy (src_ip, info->client_ip);
+
+    // Destination URL or IPv4 address: you need to fill this out
+    strcpy (target, info->standalone_dst);
+
+    // Fill out hints for getaddrinfo().
+    memset (&hints, 0, sizeof (struct addrinfo));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = hints.ai_flags | AI_CANONNAME;
+
+    // Resolve target using getaddrinfo().
+    if ((status = getaddrinfo (target, NULL, &hints, &res)) != 0) {
+        fprintf (stderr, "getaddrinfo() failed: %s\n", gai_strerror (status));
+        exit (EXIT_FAILURE);
+    }
+    ipv4 = (struct sockaddr_in *) res->ai_addr;
+    tmp = &(ipv4->sin_addr);
+    if (inet_ntop (AF_INET, tmp, dst_ip, INET_ADDRSTRLEN) == NULL) {
+        status = errno;
+        fprintf (stderr, "inet_ntop() failed.\nError message: %s", strerror (status));
+        exit (EXIT_FAILURE);
+    }
+    freeaddrinfo (res);
+
+    // Fill out sockaddr_ll.
+    device.sll_family = AF_PACKET;
+    device.sll_protocol = htons (ETH_P_IP);
+    memcpy (device.sll_addr, dst_mac, 6);
+    device.sll_halen = 6;
+
+    // UDP data
+    datalen = info->payload_size;
+
+    // IPv4 header
+
+    create_ipheader(&iphdr, info, info->packet_ttl, UDP_TYPE_NO);
+
+    // Source IPv4 address (32 bits)
+    if ((status = inet_pton (AF_INET, src_ip, &(iphdr.ip_src))) != 1) {
+        fprintf (stderr, "inet_pton() failed.\nError message: %s", strerror (status));
+        exit (EXIT_FAILURE);
+    }
+
+    // Destination IPv4 address (32 bits)
+    if ((status = inet_pton (AF_INET, dst_ip, &(iphdr.ip_dst))) != 1) {
+        fprintf (stderr, "inet_pton() failed.\nError message: %s", strerror (status));
+        exit (EXIT_FAILURE);
+    }
+
+    // UDP header
+    create_udpheader(&iphdr, &udphdr, info, data);
+
+    // Open raw socket descriptor.
+    if ((sd = socket (PF_PACKET, SOCK_DGRAM, htons (ETH_P_ALL))) < 0) {
         perror ("socket() failed ");
         exit (EXIT_FAILURE);
     }
 
-    struct sockaddr_ll device;
+    // Fill out ethernet frame header.
 
-    device.sll_family = AF_PACKET;
-    device.sll_protocol = htons (ETH_P_IP);
-    memcpy (device.sll_addr, "00000", 6);
-    device.sll_halen = 6;
+    // Ethernet frame length = ethernet data (IP header + UDP header + UDP data)
+    packet_len = IP4_HDRLEN + UDP_HDRLEN + datalen;
 
-    if(send_train(info, &udphdr, &iphdr, 0, &sd, ether_frame, &device) != 0) {
-        perror("Sending train unsuccessful");
-        return -1;
+    /* Hacky fix to fix the udp length */
+    udphdr.len = htons(datalen + UDP_HDRLEN);
+
+    printf("The length of a packet is %d\n", packet_len);
+    for(i = 0; i < info->packet_num; i++) {
+        iphdr.ip_id = htons(i);
+        memcpy(data, train[i], info->payload_size);
+        memcpy(udp_packet, &iphdr, IP4_HDRLEN);
+        memcpy(udp_packet + IP4_HDRLEN, &udphdr, UDP_HDRLEN);
+        memcpy(udp_packet + IP4_HDRLEN + UDP_HDRLEN, data, datalen); // UDP data
+        
+        if ((bytes = sendto (sd, udp_packet, packet_len, 0, (struct sockaddr *) &device, sizeof(device))) <= 0) {
+            perror ("sendto() failed");
+            exit (EXIT_FAILURE);
+        }
+        memset(udp_packet, 0, packet_len);
     }
 
-    // Close socket descriptors.
-    close(sockfd);
     close(sd);
 
-    return 0;
-}
-
-int send_train(struct ini_info *info, struct udphdr *udphdr, struct ip* iphdr, int type, int *sockfd, uint8_t *ether_frame, struct sockaddr_ll *device) {
-    int frame_length = IP4_HDRLEN + UDP_HDRLEN + info->payload_size;
-    int bytes;
-
-    /* Filling up the trains with data */
-    char** low_train = (char**) calloc(info->payload_size, sizeof(char));
-    char** high_train = (char**) calloc(info->payload_size, sizeof(char));
-    fillTrain(low_train, info->packet_num, info->payload_size, 0);
-    fillTrain(low_train, info->packet_num, info->payload_size, 1);
-
-    create_udpheader(iphdr, udphdr, info, low_train[0]);
-
-    // IPv4 header
-    memcpy (ether_frame, &iphdr, IP4_HDRLEN);
-
-    // UDP header
-    memcpy (ether_frame + IP4_HDRLEN, udphdr, UDP_HDRLEN);
-
-    // UDP data
-    memcpy (ether_frame + IP4_HDRLEN + UDP_HDRLEN, low_train[0], info->payload_size);
-    
-    if((bytes = sendto (*sockfd, ether_frame, frame_length, 0, (struct sockaddr *) device, sizeof (device))) <= 0) {
-        perror ("UDP sendto()");
-        return -1;
+    free(src_mac);
+    free(dst_mac);
+    free(data);
+    free(udp_packet);
+    free(interface);
+    free(target);
+    free(src_ip);
+    free(dst_ip);
+    free(ip_flags);
+    for(i = 0; i < info->packet_num; i++) {
+        free(train[i]);
     }
+    free(train);
+
     return 0;
 }
 
-void fillTrain(char** train, unsigned short int num, unsigned int size, int type) {
+void fillTrain(unsigned char** train, unsigned short int num, unsigned int size, int type) {
     //unsigned char low_byte;
     //unsigned char high_byte;
 
     if(type == 0) {
         for(unsigned int i=0; i<num; i++) {
-            char *ptr = *(train+i);
+            unsigned char *ptr = *(train+i);
             for(int j=0; j<size; j++) {
                 *ptr = '0';
                 ptr++;
@@ -250,7 +374,7 @@ void fillTrain(char** train, unsigned short int num, unsigned int size, int type
         FILE *fd = fopen("/dev/urandom", "r");
         for(int i=0; i<num; i++) {
             // Shift the start of the train over two bytes
-            fgets(train[i], size, fd);
+            fgets((char *) train[i], size, fd);
             train[i][0] = 'F';
             train[i][1] = 'G';
         }
