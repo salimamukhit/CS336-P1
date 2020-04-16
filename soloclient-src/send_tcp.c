@@ -64,7 +64,7 @@ void set_ifr(struct ifreq *ifr, int *sockfd, char *interface_name) {
     }
 
     close(*sockfd);
-    printf("Index for interface %s is %i\n", interface_name, ifr->ifr_ifindex);
+    // printf("Index for interface %s is %i\n", interface_name, ifr->ifr_ifindex);
 }
 
 /**

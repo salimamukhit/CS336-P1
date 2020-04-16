@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 #include <errno.h>
 
 #include <pcap.h>
@@ -48,20 +49,49 @@ int main(int argc, char **argv) {
     struct ini_info *info = calloc(1, sizeof(struct ini_info));
     strcpy(info->file_name, INI_NAME);
     parse_ini(info);
+    clock_t low_start, low_end;
+    clock_t high_start, high_end;
+    double low_arrival, high_arrival;
 
     /* Send first TCP packet and collect RST packet */
     send_tcp(info, HEAD_TCP_NO);
-    LOGP("FIRST TCP\n");
+    LOGP("HEAD SYN FOR LOW ENTROPY TRAIN\n");
+    low_start = clock();
 
-    /* TCP was sent now we can work on UDP */
+    /* Send first packet train*/
     send_udp(info, 0);
     LOGP("SENT UDP TRAIN #1\n");
 
-    // TODO send a second train
-
     /* Send second TCP packet and collect RST packet */
     send_tcp(info, TAIL_TCP_NO);
-    LOGP("SECOND TCP\n");
+    LOGP("TAIL SYN FOR LOW ENTROPY TRAIN\n");
+    low_end = clock();
+    low_arrival = (low_end - low_start) / (double) CLOCKS_PER_SEC;
+
+    /* Waiting inter measurement time from configuration */
+    sleep(info->meas_time);
+    
+    /* Repeating same steps for high entropy train */
+    send_tcp(info, HEAD_TCP_NO);
+    LOGP("HEAD SYN FOR HIGH ENTROPY TRAIN\n");
+    high_start = clock();
+
+    send_udp(info, 1);
+    LOGP("SENT UDP TRAIN #2\n");
+
+    send_tcp(info, TAIL_TCP_NO);
+    LOGP("TAIL SYN FOR HIGH ENTROPY TRAIN\n");
+    high_end = clock();
+    high_arrival = (high_end - high_start) / (double) CLOCKS_PER_SEC;
+
+    printf("Low entropy train arrival time: %lf sec\n", low_arrival);
+    printf("High entropy train arrival time: %lf sec\n", high_arrival);
+
+    if((high_arrival - low_arrival) >= 0.1) {
+        printf("Compression was detected.\n");
+    } else {
+        printf("No compression was detected\n");
+    }
 
     return 0;
 }
@@ -210,7 +240,6 @@ int send_udp(struct ini_info *info, int entropy_type) {
     /* Hacky fix to fix the udp length */
     udphdr.len = htons(datalen + UDP_HDRLEN);
 
-    printf("The length of a packet is %d\n", packet_len);
     for(i = 0; i < info->packet_num; i++) {
         iphdr.ip_id = htons(i);
         memcpy(data, train[i], info->payload_size);
@@ -218,7 +247,7 @@ int send_udp(struct ini_info *info, int entropy_type) {
         memcpy(udp_packet + IP4_HDRLEN, &udphdr, UDP_HDRLEN);
         memcpy(udp_packet + IP4_HDRLEN + UDP_HDRLEN, data, datalen); // UDP data
         
-        if ((bytes = sendto (sd, udp_packet, packet_len, 0, (struct sockaddr *) &device, sizeof(device))) <= 0) {
+        if((bytes = sendto (sd, udp_packet, packet_len, 0, (struct sockaddr *) &device, sizeof(device))) <= 0) {
             perror ("sendto() failed");
             exit (EXIT_FAILURE);
         }
