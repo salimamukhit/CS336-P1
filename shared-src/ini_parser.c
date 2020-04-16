@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <ctype.h>
 
 #include <netdb.h>
 #include <sys/types.h>
@@ -47,6 +48,17 @@ int extractor(char* line, char name[], char value[]) {
     else return 0;
 }
 
+void check_port(char *port) {
+    for(int i = 0; i < 7; i++) {
+        char curr = *(port + i);
+        if(curr == '\0') break;
+        if(isdigit(curr) == 0) {
+            fprintf(stderr, "The port number is not a number! Please choose one in the range 49152 to 65535\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+}
+
 /**
  * @brief Parses configuration file and passes all the parameters where necessary.
  * @param parsed_info is a pointer to the information to be distributed
@@ -78,34 +90,56 @@ int parse_ini(struct ini_info *parsed_info) {
         
         // BUG is that line gets used up by next token
         if(strncmp(name, "ServerIP", 255) == 0) {
-            inet_pton(AF_INET, value, &(parsed_info->server_ip));
+            int status = inet_pton(AF_INET, value, &(parsed_info->server_ip));
+            if(status < 1) fprintf(stderr, "'ServerIP=%s' is not valid!", value), exit(EXIT_FAILURE);
         }
         else if(strncmp(name, "SourceUDP", 255) == 0) {
+            check_port(value);
             parsed_info->train_udp.udph_srcport = (unsigned short int)atoi(value);
         }
         else if(strncmp(name, "DestinationUDP", 255) == 0) {
+            check_port(value);
             parsed_info->train_udp.udph_destport = (unsigned short int)atoi(value);
         }
         else if(strncmp(name, "HeadDestinationTCP", 255) == 0) {
+            check_port(value);
             parsed_info->head_port = (unsigned short int)atoi(value);
         }
         else if(strncmp(name, "TailDestinationTCP", 255) == 0) {
+            check_port(value);
             parsed_info->tail_port = (unsigned short int)atoi(value);
         }
         else if(strncmp(name, "PortNumberTCP", 255) == 0) {
+            check_port(value);
             parsed_info->server_port = (unsigned short int)atoi(value);
         }
         else if(strncmp(name, "PayloadSizeUDP", 255) == 0) {
             parsed_info->payload_size = (unsigned short int)atoi(value);
+            if(parsed_info->payload_size == 0) {
+                fprintf(stderr, "'PayloadSizeUDP=%d' Cannot be zero", parsed_info->payload_size);
+                exit(EXIT_FAILURE);
+            }
         }
         else if(strncmp(name, "InterMeasurementTime", 255) == 0) {
             parsed_info->meas_time = (time_t)atoi(value);
+            if(parsed_info->meas_time == 0) {
+                fprintf(stderr, "'InterMeasurementTime=%ld' Cannot be zero", parsed_info->meas_time);
+                exit(EXIT_FAILURE);
+            }
         }
         else if(strncmp(name, "NumberPackets", 255) == 0) {
             parsed_info->packet_num = (unsigned short int)atoi(value);
+            if(parsed_info->packet_num == 0) {
+                fprintf(stderr, "'NumberPackets=%ud' Cannot be zero", parsed_info->packet_num);
+                exit(EXIT_FAILURE);
+            }
         }
         else if(strncmp(name, "TimeToLiveUDP", 255) == 0) {
             parsed_info->packet_ttl = (unsigned short int)atoi(value);
+            if(parsed_info->packet_ttl > 255) {
+                fprintf(stderr, "'TimeToLiveUDP=%s' Invalid TTL!", value);
+                exit(EXIT_FAILURE);
+            }
         }
         else if(strncmp(name, "ClientIP", 255) == 0) {
             strncpy(parsed_info->client_ip, value, 16);

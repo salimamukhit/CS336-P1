@@ -275,13 +275,13 @@ int send_udp(struct ini_info *info, int entropy_type) {
 
 void fillTrain(unsigned char** train, unsigned short int num, unsigned int size, int type) {
     srand(time(NULL));
-    u_int16_t id = 0x0;
+    u_int16_t id = 0x00;
     u_int16_t mask_right = 0b0000000011111111;
 
     if(type == 0) {
         for(int i =0 ; i < num; i++) {
             for(int j = 0; j < size; j++) {
-                train[i][j] = 0x00;
+                train[i][j] = 0x0;
             }
             train[i][0] = id >> 8;
             train[i][1] = id & mask_right;

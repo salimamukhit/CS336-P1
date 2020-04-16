@@ -1,5 +1,5 @@
 # Set the following to '0' to disable log messages:
-LOGGER ?= 1
+LOGGER ?= 0
 
 TARGET=client
 CC=gcc

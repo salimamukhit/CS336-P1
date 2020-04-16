@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <time.h>
+#include <sys/time.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -16,6 +17,7 @@
 #include "../shared-src/logger.h"
 
 #define PORT 8080
+#define TIMEOUT 20
 
 int start_udp_server(struct ini_info *info, double* low_arrival, double* high_arrival) {
     printf("UDP server started\n");
@@ -41,11 +43,19 @@ int start_udp_server(struct ini_info *info, double* low_arrival, double* high_ar
 
     printf("Address is %d\n", info->server_ip.s_addr);
 
-    if(bind(sockfd, (const struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) { // binding
+    if(bind(sockfd, (const struct sockaddr*) &servaddr, sizeof(servaddr)) < 0) { // binding
         perror("Bind");
         return -1;
     }
     printf("Binding was successful\n");
+
+    // Setting up the time out for a socket (in seconds) We base this on the inter-measurement time
+    // Defaulting it to two seconds, if the measurement time is not greater than two then set it to one.
+    struct timeval tv;
+    if(info->meas_time > 2) tv.tv_sec = 2;
+    else tv.tv_sec = 1;
+    tv.tv_usec = 0;
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
 
     unsigned int cliaddr_len = sizeof(cliaddr);
     int n;
@@ -69,35 +79,51 @@ int start_udp_server(struct ini_info *info, double* low_arrival, double* high_ar
     buffer[n] = '\0';
     count++;
     low_start = clock();
+
+    // for(int i = 0; i < packets-1; i++) {
     
     for(int i = 0; i < packets-1; i++) {
         n = recvfrom(sockfd, &buffer, sizeof(buffer), MSG_WAITALL, (struct sockaddr *)&cliaddr, &cliaddr_len);
-        buffer[n] = '\0';
-        count++;
+        if(n >= 0) {
+            buffer[n] = '\0';
+            count++;
+            low_end = clock();
+        }
+        else if(i == 0 && n == -1) {
+            fprintf(stderr, "Failed to receive any Low Entropy packets!\n");
+            free(info);
+            exit(EXIT_FAILURE);
+        }
+        else break;
     }
     printf("Received: %d\n", count);
 
-    low_end = clock();
     low_time = (low_end - low_start) / (double) CLOCKS_PER_SEC;
     printf("Low entropy arrival time: %lf sec\n", low_time);
     printf("first packet, last packet: %ld %ld\n", low_start, low_end);
 
     /* Start the counting of the packets and the timer for the high entropy data */
 
-    n = recvfrom(sockfd, &buffer, sizeof(buffer), MSG_WAITALL, 
-        (struct sockaddr *)&cliaddr, &cliaddr_len);
+    /* Use a while loop to prevent the SO_RCVTIMEO property of the socket from creating a false start time due to a timeout */
+    while((n = recvfrom(sockfd, &buffer, sizeof(buffer), MSG_WAITALL, (struct sockaddr *)&cliaddr, &cliaddr_len) == -1));
     buffer[n] = '\0';
     count++;
     high_start = clock();
     for(int i = 0; i < packets-1; i++) {
-        n = recvfrom(sockfd, &buffer, sizeof(buffer), MSG_WAITALL, 
-        (struct sockaddr *)&cliaddr, &cliaddr_len);
-        buffer[n] = '\0';
-        count++;
+        n = recvfrom(sockfd, &buffer, sizeof(buffer), MSG_WAITALL, (struct sockaddr *)&cliaddr, &cliaddr_len);
+        if(n >= 0) {
+            buffer[n] = '\0';
+            count++;
+            high_end = clock();
+        }
+        else if(i == 0 && n == -1) {
+            // Timeout is irrelevant in the inter measurement time.
+            continue;
+        }
+        else break;
     }
     printf("Received: %d\n", count);
 
-    high_end = clock();
     high_time = (high_end - high_start) / (double) CLOCKS_PER_SEC;
     *low_arrival = low_time;
     *high_arrival = high_time;

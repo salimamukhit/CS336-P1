@@ -18,16 +18,26 @@
 #include "../shared-src/msleep.h"
 
 #define PORT 8080
+#define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
+#define BYTE_TO_BINARY(byte)  \
+  (byte & 0x80 ? '1' : '0'), \
+  (byte & 0x40 ? '1' : '0'), \
+  (byte & 0x20 ? '1' : '0'), \
+  (byte & 0x10 ? '1' : '0'), \
+  (byte & 0x08 ? '1' : '0'), \
+  (byte & 0x04 ? '1' : '0'), \
+  (byte & 0x02 ? '1' : '0'), \
+  (byte & 0x01 ? '1' : '0') 
 
-void fillTrain(char** train, unsigned short int num, unsigned int size, int type) {
+void fillTrain(unsigned char** train, unsigned short int num, unsigned int size, int type) {
     srand(time(NULL));
-    u_int16_t id = 0x0;
-    u_int16_t mask_right = 0b0000000011111111;
+    u_int16_t id = 0x00;
+    u_int16_t mask_right = 0b0000000011111111; // Or we can represent it as 0x0F
 
     if(type == 0) {
         for(int i =0 ; i < num; i++) {
             for(int j = 0; j < size; j++) {
-                train[i][j] = 0x00;
+                train[i][j] = 0x0;
             }
             train[i][0] = id >> 8;
             train[i][1] = id & mask_right;
@@ -37,7 +47,7 @@ void fillTrain(char** train, unsigned short int num, unsigned int size, int type
     else {
         for(int i =0 ; i < num; i++) {
             for(int j = 0; j < size; j++) {
-                train[i][j] = (char) rand();
+                train[i][j] = (unsigned char) rand();
             }
             train[i][0] = id >> 8;
             train[i][1] = id & mask_right;
@@ -46,9 +56,9 @@ void fillTrain(char** train, unsigned short int num, unsigned int size, int type
     }
 }
 
-void print_payload(char *payload, unsigned int size) {
+void print_payload(unsigned char *payload, unsigned int size) {
     for(int i = 0; i < size; i++) {
-        printf("%d", !!((payload[i] << i) & 0x80));
+        printf(BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(payload[i]));
     }
     puts("\n--------------------------------------------------------");
 }
@@ -85,11 +95,11 @@ int udp_train(struct ini_info* info) {
     //int packets = 10; //testing
     int size = info->payload_size;
 
-    char** low_entropy = calloc(packets, sizeof(char*));
-    char** high_entropy = calloc(packets, sizeof(char*));
+    unsigned char** low_entropy = calloc(packets, sizeof(unsigned char*));
+    unsigned char** high_entropy = calloc(packets, sizeof(unsigned char*));
     for(int i = 0; i < packets; i++) {
-        low_entropy[i] = calloc(size, sizeof(char));
-        high_entropy[i] = calloc(size, sizeof(char));
+        low_entropy[i] = calloc(size, sizeof(unsigned char));
+        high_entropy[i] = calloc(size, sizeof(unsigned char));
     }
     fillTrain(low_entropy, packets, size, 0);
     fillTrain(high_entropy, packets, size, 1);
@@ -99,10 +109,15 @@ int udp_train(struct ini_info* info) {
     //printf("High entropy packet:\n");
     //print_payload(high_entropy[0], size);
 
-    printf("Low entropy packet:  %.*s\n", packets, low_entropy[0]);
+    //printf("Low entropy packet:  %.*s\n", packets, low_entropy[0]);
+    puts("Low Entropy Data:");
+    print_payload(*low_entropy, info->payload_size);
     puts("");
-    puts("High entropy gets null-terminated prematurely becuase of the randomness.");
-    printf("High entropy packet:  %s\n", high_entropy[0]);
+    //puts("High entropy gets null-terminated prematurely becuase of the randomness.");
+    //printf("High entropy packet:  %s\n", high_entropy[0]);
+    puts("High Entropy Data:");
+    print_payload(*high_entropy, info->payload_size);
+    puts("");
 
     for(int i = 0; i < packets; i++) {
         msleep(1);
