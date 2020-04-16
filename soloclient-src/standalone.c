@@ -58,6 +58,13 @@ int main(int argc, char **argv) {
     return 0;
 }
 
+/**
+ * @brief Sends UDP packets according to INI spec.
+ * 
+ * @param info The INI struct.
+ * @param entropy_type 0 for low and 1 for high.
+ * @return int 
+ */
 int send_udp(struct ini_info *info, int entropy_type) {
     int i, status, datalen, packet_len, sd, bytes, *ip_flags;
     char *interface, *target, *src_ip, *dst_ip;
@@ -92,7 +99,7 @@ int send_udp(struct ini_info *info, int entropy_type) {
 
     // Fill Trains
 
-    fillTrain(train, info->packet_num, info->payload_size, type);
+    fillTrain(train, info->packet_num, info->payload_size, entropy_type);
     // Interface to send packet through.
     strcpy (interface, info->interface);
 
