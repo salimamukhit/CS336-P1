@@ -53,8 +53,10 @@ int main(int argc, char **argv) {
     send_tcp(info, HEAD_TCP_NO);
 
     /* TCP was sent now we can work on UDP */
-
     send_udp(info, 0);
+
+    /* Send second TCP packet and collect RST packet */
+    send_tcp(info, TAIL_TCP_NO);
 
     return 0;
 }
