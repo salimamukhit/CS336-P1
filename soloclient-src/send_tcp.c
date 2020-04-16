@@ -195,6 +195,7 @@ int send_tcp(struct ini_info *info, unsigned int packet_no) {
         // Wait for RST flag
         get_rst(info);
         printf("Retrieved RST Packet :P\n");
+        exit(EXIT_SUCCESS);
     } else if(child == -1) {
         /* Something went wrong */
         perror("fork ");
