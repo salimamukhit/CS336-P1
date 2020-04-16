@@ -27,3 +27,39 @@ Go to configuration file solo-config.ini. It is located in soloclient-src. If yo
 -------------------- Additional Information --------------------
 
 The shared-src folder contains files with helper methods and parser of a configuration file. The purpose of each program is described.
+
+--------------------     INI Information    ---------------------
+
+A full INI consists of these parameters:  ( Comments are not filtered, so remove before use)
+Also a newline character is required to be at the end of the last line.
+```
+ServerIP=107.180.95.33
+SourceUDP=55001
+DestinationUDP=55000
+HeadDestinationTCP=56000
+TailDestinationTCP=62000
+PortNumberTCP=50000
+PayloadSizeUDP=1000
+InterMeasurementTime=5
+NumberPackets=6000
+TimeToLiveUDP=255
+ClientIP=192.168.1.37
+Interface=enp4s0
+StandAloneDst=107.180.95.33
+```
+Commented Version ( DO NOT USE )
+```
+ServerIP= The Server IP used for the Client/Server application
+SourceUDP= The UDP port for a client.
+DestinationUDP= The UDP port for a server.
+HeadDestinationTCP= The TCP port used for the Head SYN packet in the standalone application.
+TailDestinationTCP= Same as above, but the tail.
+PortNumberTCP= The port that the server is listening on.
+PayloadSizeUDP= The size of a UDP payload in bytes.
+InterMeasurementTime= The break between measurements of UDP high and low entropy trains.
+NumberPackets= The Number of UDP packets to be sent.
+TimeToLiveUDP= The time to live for UDP packets.
+ClientIP= The IP of the client (Used for the standalone application).
+Interface= The networking interface name of the client (Used for the standalone application).
+StandAloneDst= The server IP used for the standalone application.
+```
