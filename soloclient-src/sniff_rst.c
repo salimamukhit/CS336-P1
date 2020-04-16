@@ -108,11 +108,13 @@ int get_rst(struct ini_info *info) {
     pcap_t *handle;			        /* Session handle */
     char errbuf[PCAP_ERRBUF_SIZE];	/* Error string */
     struct bpf_program fp;		    /* The compiled filter */
-    char filter_exp[] = ""; //"(tcp[13] == 0x10) or (tcp[13] == 0x18)";	/* The filter expression */
+    char filter_exp[1024] = { 0 };  /* The filter expression */
     bpf_u_int32 mask;		        /* Our netmask */
     bpf_u_int32 net;		        /* Our IP */
     char *dev = info->interface;    /* The specified device interface from the INI */ /* The device to sniff on */
     
+    /* Setup the filter */
+    snprintf(filter_exp, 1024, "(dst %s) && (src %s) && (tcp[tcpflags] & (tcp-rst) != 0)", info->client_ip, info->standalone_dst);
 
     /* Find the properties for the device */
     if (pcap_lookupnet(dev, &net, &mask, errbuf) == -1) {
