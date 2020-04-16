@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <time.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -19,27 +20,29 @@
 #define PORT 8080
 
 void fillTrain(char** train, unsigned short int num, unsigned int size, int type) {
-    //unsigned char low_byte;
-    //unsigned char high_byte;
+    srand(time(NULL));
+    u_int16_t id = 0x0;
+    u_int16_t mask_right = 0b0000000011111111;
 
     if(type == 0) {
-        for(unsigned int i=0; i<num; i++) {
-            char *ptr = *(train+i);
-            for(int j=0; j<size; j++) {
-                *ptr = '0';
-                ptr++;
+        for(int i =0 ; i < num; i++) {
+            for(int j = 0; j < size; j++) {
+                train[i][j] = 0x00;
             }
+            train[i][0] = id >> 8;
+            train[i][1] = id & mask_right;
+            id += 0b1;
         }
     }
     else {
-        FILE *fd = fopen("/dev/urandom", "r");
-        for(int i=0; i<num; i++) {
-            // Shift the start of the train over two bytes
-            fgets(train[i], size, fd);
-            train[i][0] = 'F';
-            train[i][1] = 'G';
+        for(int i =0 ; i < num; i++) {
+            for(int j = 0; j < size; j++) {
+                train[i][j] = (char) rand();
+            }
+            train[i][0] = id >> 8;
+            train[i][1] = id & mask_right;
+            id += 0b1;
         }
-        fclose(fd);
     }
 }
 
