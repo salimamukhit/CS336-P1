@@ -30,8 +30,14 @@ The shared-src folder contains files with helper methods and parser of a configu
 
 --------------------     INI Information    ---------------------
 
-A full INI consists of these parameters:  ( Comments are not filtered, so remove before use)
-Also a newline character is required to be at the end of the last line.
+Notes before use:
+1) Comments are not supported in this format.
+2) There can be no whitespace before or after the equals sign.
+3) There must be a value after the equals sign, it cannot be left blank.
+If you want to leave a variable empty then delete the line, although this can only be done with parameters that have a default values.
+4) There must be a newline character that terminates each line. Including the last line.
+
+A full INI consists of these parameters:
 ```
 ServerIP=107.180.95.33
 SourceUDP=55001
