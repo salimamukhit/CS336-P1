@@ -57,10 +57,10 @@ int start_udp_server(struct ini_info *info, double* low_arrival, double* high_ar
     printf("Received data: %s\n", buffer);
 
     int packets = info->packet_num;
-    //int packets = 10; //testing
+
+    /* Start the counting of the packets and the timer for the low entropy data */
 
     int count = 0;
-
     clock_t low_start, low_end, high_start, high_end;
     double low_time, high_time;
 
@@ -68,16 +68,12 @@ int start_udp_server(struct ini_info *info, double* low_arrival, double* high_ar
         (struct sockaddr *)&cliaddr, &cliaddr_len);
     buffer[n] = '\0';
     count++;
-    //printf("Received: %d\n", count);
     low_start = clock();
     
     for(int i = 0; i < packets-1; i++) {
-        n = recvfrom(sockfd, &buffer, sizeof(buffer), MSG_WAITALL, 
-        (struct sockaddr *)&cliaddr, &cliaddr_len);
+        n = recvfrom(sockfd, &buffer, sizeof(buffer), MSG_WAITALL, (struct sockaddr *)&cliaddr, &cliaddr_len);
         buffer[n] = '\0';
         count++;
-        //printf("Received: %d\n", count);
-        //printf("Received data: %s\n", buffer);
     }
     printf("Received: %d\n", count);
 
@@ -86,19 +82,18 @@ int start_udp_server(struct ini_info *info, double* low_arrival, double* high_ar
     printf("Low entropy arrival time: %lf sec\n", low_time);
     printf("first packet, last packet: %ld %ld\n", low_start, low_end);
 
+    /* Start the counting of the packets and the timer for the high entropy data */
+
     n = recvfrom(sockfd, &buffer, sizeof(buffer), MSG_WAITALL, 
         (struct sockaddr *)&cliaddr, &cliaddr_len);
     buffer[n] = '\0';
     count++;
-    //printf("Received: %d\n", count);
     high_start = clock();
     for(int i = 0; i < packets-1; i++) {
         n = recvfrom(sockfd, &buffer, sizeof(buffer), MSG_WAITALL, 
         (struct sockaddr *)&cliaddr, &cliaddr_len);
         buffer[n] = '\0';
         count++;
-        //printf("Received: %d\n", count);
-        //printf("Received data: %s\n", buffer);
     }
     printf("Received: %d\n", count);
 
