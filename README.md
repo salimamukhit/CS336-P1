@@ -29,6 +29,7 @@ Go to configuration file solo-config.ini. It is located in soloclient-src. If yo
 The shared-src folder contains files with helper methods and parser of a configuration file. The purpose of each program is described.
 
 --------------------     INI Information    ---------------------
+
 Notes before use:
 1) Comments are not supported in this format.
 2) There can be no whitespace before or after the equals sign.
