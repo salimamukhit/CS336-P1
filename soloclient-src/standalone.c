@@ -51,12 +51,17 @@ int main(int argc, char **argv) {
 
     /* Send first TCP packet and collect RST packet */
     send_tcp(info, HEAD_TCP_NO);
+    LOGP("FIRST TCP\n");
 
     /* TCP was sent now we can work on UDP */
     send_udp(info, 0);
+    LOGP("SENT UDP TRAIN #1\n");
+
+    // TODO send a second train
 
     /* Send second TCP packet and collect RST packet */
     send_tcp(info, TAIL_TCP_NO);
+    LOGP("SECOND TCP\n");
 
     return 0;
 }
