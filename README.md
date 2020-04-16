@@ -30,7 +30,7 @@ The shared-src folder contains files with helper methods and parser of a configu
 
 --------------------     INI Information    ---------------------
 
-A full INI consists of these parameters:  (Comments are not filtered, so remove before use)
+A full INI consists of these parameters:  (Comments are not filtered, so remove any before use)
 Also a newline character is required to be at the end of the last line.
 ```
 ServerIP=107.180.95.33
