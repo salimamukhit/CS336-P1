@@ -6,11 +6,11 @@ In this file there will be a description on how to execute Server-Client Applica
 
 -------------------- Client-Server Application --------------------
 
-Go to configuration file config.ini. It is located in client-src folder. If you open it, you can see all the configurations needed for this part of the project. Both client and server run on our machine, the IP address used to bind server is 127.0.0.1
+Go to configuration file config.ini. It is located in client-src folder. If you open it, you can see all the configurations needed for this part of the project. Both client and server run on one machine with a loop-back, so the IP address used to bind server is 127.0.0.1, as well as it is the IP address of the client. 
 
-1) In your terminal you should open a server-src folder. Then you run a make command in Terminal. This will compile a program. Then you have to run it with sudo ./server
+1) In your terminal you should go to server-src folder. Then you run a make command in Terminal. This will compile a program. Then you have to run it with ./server. If it doesn't work, try running it with sudo ./server.
 
-2) In your other terminal window you should go to client-src folder. Then you run a make command in Terminal. This will compile a client program. Then you have to run it with sudo ./client
+2) In your other terminal window you should go to client-src folder. Then you run a make command in Terminal. This will compile a client program. Then you have to run it with ./client. If it doesn't work, try running it with sudo ./client.
 
 3) In server-src you can see that the file received-config.ini appeared. This is the result of client sending the configuration file to the server.
 
@@ -47,6 +47,7 @@ DestinationUDP=55000
 HeadDestinationTCP=56000
 TailDestinationTCP=62000
 PortNumberTCP=50000
+PortNumberUDP=52000
 PayloadSizeUDP=1000
 InterMeasurementTime=5
 NumberPackets=6000
@@ -63,6 +64,7 @@ DestinationUDP= The UDP port for a server.
 HeadDestinationTCP= The TCP port used for the Head SYN packet in the standalone application.
 TailDestinationTCP= Same as above, but the tail.
 PortNumberTCP= The port that the server is listening on.
+PortNumberUDP= The port used for sending and receiving packet trains
 PayloadSizeUDP= The size of a UDP payload in bytes.
 InterMeasurementTime= The break between measurements of UDP high and low entropy trains.
 NumberPackets= The Number of UDP packets to be sent.
