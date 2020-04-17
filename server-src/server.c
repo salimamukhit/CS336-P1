@@ -10,6 +10,7 @@
 
 #define RED_CODE "\033[31m"
 #define GREEN_CODE "\033[32m"
+#define YELLOW_CODE "\033[33m"
 #define BLUE_CODE "\033[34m"
 #define RESET_CODE "\033[0m"
 
@@ -24,12 +25,26 @@
 /**
  * @brief Starts the server and handles the transitioning between the TCP -> UDP -> TCP steps
  * 
- * @param argc the number to arguments
- * @param argv the command line instruction containing the port number (e.g. {"server", "1337"})
- * @return int success for failure
+ * @param argc the number of arguments
+ * @param argv the command line instruction containing the name of config file
+ * @return int success or failure
  */
 int main(int argc, char *argv[]) {
-    int port = DEFAULT_PORT;
+    /* Read in TCP port from server_config.ini */
+    struct ini_info *tcp_port_ini = calloc(1, sizeof(struct ini_info));
+    if(argc == 1) {
+        strcpy(tcp_port_ini->file_name, "server_config.ini");
+        printf("%sServer configuration file not provided, defaulting to:%s '%sserver_config.ini%s'\n",
+                GREEN_CODE, RESET_CODE, BLUE_CODE, RESET_CODE);
+    } else if(argc >= 2) {
+        strcpy(tcp_port_ini->file_name, argv[1]);
+    }
+    
+    parse_ini(tcp_port_ini);
+
+    unsigned short port = tcp_port_ini->server_port; //DEFAULT_PORT;
+
+
     /* Prepare the INI struct */
     struct ini_info *info = calloc(1, sizeof(struct ini_info));
     strcpy(info->file_name, INI_NAME);
@@ -38,24 +53,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Too many arguments!\n");
         exit(EXIT_FAILURE);
     }
-    if(argc == 1) {
-        printf("%sNO PORT NUMBER SPECIFIED!\n", RED_CODE);
-        printf("%sDefaulting to Port:%s 50000%s\n\n",GREEN_CODE, BLUE_CODE, RESET_CODE);
-        goto start;  // This is technically more like assembler code, but it looks pretty. Look for the label "start:"
-    }
-
-    LOG("Command Line Port: %s\n", argv[1]);
-    char *port_string = argv[1];
-    for(int i = 0; i < 7; i++) {
-        char curr = *(port_string + i);
-        if(curr == '\0') break;
-        if(isdigit(curr) == 0) {
-            fprintf(stderr, "The port number is not a number! Please choose one in the range 49152 to 65535\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    port = atoi(argv[1]);
 
     if(port < 1) {
         fprintf(stderr, "C'mon you can't have a negative port! Please choose one in the range 49152 to 65535\n");
@@ -67,10 +64,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Port is not in the valid range! Please choose on in the range 49152 to 65535\n");
     }
 
-    printf("Configured Port:  %d\n", port);
+    printf("%sConfigured Port:%s %d\n%s",RED_CODE, YELLOW_CODE, port, RESET_CODE);
 
-
-start:
     /* Listen for the config file and if there is error don't continue */ /* Specify step number 0 as well */
     if(start_server((u_int16_t) port, info) < 0) {
         perror("Something happend in the TCP connection for retriving the .INI");
@@ -82,16 +77,14 @@ start:
         printf("INI info successfully retrieved!\n");
     }
 
-    printf("Hopefully retrieved the INI file :)\n");
+    // printf("Hopefully retrieved the INI file :)\n"); // we use this for debugging
 
     double low_arrival, high_arrival;
     start_udp_server(info, &low_arrival, &high_arrival);
     send_results(port, &low_arrival, &high_arrival);
     
-    /* Listen for the UDP files and create the analytics. */
-    /* This function should automatically call the next step to send back the results */
-    // TODO create a UDP server...
-
     free(info);
+    /* Remove temp INI file */
+    remove(INI_NAME);
     return 0;
 }

@@ -13,17 +13,21 @@
 #include "../shared-src/structs.h"
 #include "../shared-src/msleep.h"
 
-#define PORT 50000   /* the port client will be connecting to */
 #define MAXDATASIZE 100 /* max number of bytes we can get at once */
 #define CONFIGNAME "config.ini"
 
-// Declare struct prototype for struct ini_info
-//struct ini_info;
-
+/**
+ * @brief sends over a configuration file to the server
+ * 
+ * @param info pointer to the struct ini_info to be filled with config data
+ * @return 0 if successful, exits if failure
+ */
 int send_config(struct ini_info *info) {
     int sockfd, numbytes;  
     char buf[MAXDATASIZE];
     struct sockaddr_in their_addr; /* connector's address information */
+
+    LOG("PORT: %d\n", info->server_port);
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("socket");
@@ -47,7 +51,6 @@ int send_config(struct ini_info *info) {
     FILE* fp = fopen(CONFIGNAME, "r");
     while(1) {
         while(fgets(line_arr, sizeof(line_arr), fp) != NULL) {
-            LOG("LINE: %s", line_arr);
             if(send(sockfd, line_arr, 256, 0) == -1) {
                 perror("send");
                 exit(EXIT_FAILURE);
@@ -77,6 +80,15 @@ int send_config(struct ini_info *info) {
     return 0;
 }
 
+/**
+ * @brief sends the results of compression detection back to the client
+ * 
+ * @param port port number that should be used to send over the results
+ * @param info pointer to the struct ini_info filled with config data
+ * @param low_arrival arrival time of a low entropy packet train
+ * @param high_arrival arrival time of a high entropy packet train
+ * @return 0 in case of success, -1 otherwise
+ */
 int receive_results(unsigned short int port, struct ini_info *info, double *low_arrival, double *high_arrival) {
     int sockfd;
     int numbytes;

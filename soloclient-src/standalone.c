@@ -43,12 +43,30 @@
 int send_udp(struct ini_info *info, int type);
 void fillTrain(unsigned char** train, unsigned short int num, unsigned int size, int type);
 
-
+/**
+ * @brief takes the name of config file and performs standalone compression detection
+ * 
+ * @param argc number of arguments
+ * @param argv the argument values (such as name of config file)
+ * @return int 
+ */
 int main(int argc, char **argv) {
     /* Parse our INI */
-    struct ini_info *info = calloc(1, sizeof(struct ini_info));
-    strcpy(info->file_name, INI_NAME);
+    struct ini_info *info;
+    if(argc == 1) {
+        info = calloc(1, sizeof(struct ini_info));
+        strcpy(info->file_name, INI_NAME);
+    } else if(argc == 2) {
+        info = calloc(1, sizeof(argv[1]));
+        strcpy(info->file_name, argv[1]);
+    } else {
+        printf("Too many arguments!\n");
+        exit(EXIT_FAILURE);
+    }
+    
     parse_ini(info);
+
+    /* Initializing timing variables */
     clock_t low_start, low_end;
     clock_t high_start, high_end;
     double low_arrival, high_arrival;
@@ -84,6 +102,7 @@ int main(int argc, char **argv) {
     high_end = clock();
     high_arrival = (high_end - high_start) / (double) CLOCKS_PER_SEC;
 
+    /* Printing out the results */
     printf("Low entropy train arrival time: %lf sec\n", low_arrival);
     printf("High entropy train arrival time: %lf sec\n", high_arrival);
 
@@ -101,7 +120,7 @@ int main(int argc, char **argv) {
  * 
  * @param info The INI struct.
  * @param entropy_type 0 for low and 1 for high.
- * @return int 
+ * @return 0 for success and -1 for failure
  */
 int send_udp(struct ini_info *info, int entropy_type) {
     int i, status, datalen, packet_len, sd, bytes, *ip_flags;
@@ -273,15 +292,33 @@ int send_udp(struct ini_info *info, int entropy_type) {
     return 0;
 }
 
+/**
+ * @brief fills the packet train
+ * 
+ * @param char pointer to a train that can be filled with either low or high entropy data
+ * @param num total number of packets in the train
+ * @param size payload size of one packet
+ * @param type 0 for low entropy train and 1 for high entropy train
+ */
 void fillTrain(unsigned char** train, unsigned short int num, unsigned int size, int type) {
     srand(time(NULL));
-    u_int16_t id = 0x0;
-    u_int16_t mask_right = 0b0000000011111111;
+    u_int16_t id = 0x00;
+    u_int16_t mask_right = 0b0000000011111111; // Or we can represent it as 0x0F
 
     if(type == 0) {
         for(int i =0 ; i < num; i++) {
             for(int j = 0; j < size; j++) {
-                train[i][j] = 0x00;
+                train[i][j] = 0x0;
+            }
+            train[i][0] = id >> 8;
+            train[i][1] = id & mask_right;
+            id += 0b1;
+        }
+    }
+    else if(type == 1) {
+        for(int i =0 ; i < num; i++) {
+            for(int j = 0; j < size; j++) {
+                train[i][j] = (unsigned char) rand();
             }
             train[i][0] = id >> 8;
             train[i][1] = id & mask_right;
@@ -289,13 +326,6 @@ void fillTrain(unsigned char** train, unsigned short int num, unsigned int size,
         }
     }
     else {
-        for(int i =0 ; i < num; i++) {
-            for(int j = 0; j < size; j++) {
-                train[i][j] = (char) rand();
-            }
-            train[i][0] = id >> 8;
-            train[i][1] = id & mask_right;
-            id += 0b1;
-        }
+        perror("Invalid type for filling the packet train!\n");
     }
 }
