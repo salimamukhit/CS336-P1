@@ -16,8 +16,14 @@
 #include "../shared-src/structs.h"
 #include "../shared-src/logger.h"
 
-#define TIMEOUT 20
-
+/**
+ * @brief receives packet trains and performs compression detection
+ * 
+ * @param info pointer to the struct ini_info filled with config data
+ * @param low_arrival pointer to the variable for arrival time of low entropy packet train
+ * @param high_arrival pointer to the variable for arrival time of high entropy packet train
+ * @return 0 for success and -1 for failure
+ */
 int start_udp_server(struct ini_info *info, double* low_arrival, double* high_arrival) {
     printf("UDP server started\n");
     printf("The port is: %d\n", htons(info->server_udp_port));\
@@ -79,7 +85,6 @@ int start_udp_server(struct ini_info *info, double* low_arrival, double* high_ar
     count++;
     low_start = clock();
 
-    // for(int i = 0; i < packets-1; i++) {
     
     for(int i = 0; i < packets-1; i++) {
         n = recvfrom(sockfd, &buffer, sizeof(buffer), MSG_WAITALL, (struct sockaddr *)&cliaddr, &cliaddr_len);

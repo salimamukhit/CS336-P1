@@ -25,9 +25,9 @@
 /**
  * @brief Starts the server and handles the transitioning between the TCP -> UDP -> TCP steps
  * 
- * @param argc the number to arguments
- * @param argv the command line instruction containing the port number (e.g. {"server", "1337"})
- * @return int success for failure
+ * @param argc the number of arguments
+ * @param argv the command line instruction containing the name of config file
+ * @return int success or failure
  */
 int main(int argc, char *argv[]) {
     /* Read in TCP port from server_config.ini */
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
         printf("INI info successfully retrieved!\n");
     }
 
-    printf("Hopefully retrieved the INI file :)\n");
+    // printf("Hopefully retrieved the INI file :)\n"); // we use this for debugging
 
     double low_arrival, high_arrival;
     start_udp_server(info, &low_arrival, &high_arrival);

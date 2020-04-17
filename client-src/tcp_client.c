@@ -16,6 +16,12 @@
 #define MAXDATASIZE 100 /* max number of bytes we can get at once */
 #define CONFIGNAME "config.ini"
 
+/**
+ * @brief sends over a configuration file to the server
+ * 
+ * @param info pointer to the struct ini_info to be filled with config data
+ * @return 0 if successful, exits if failure
+ */
 int send_config(struct ini_info *info) {
     int sockfd, numbytes;  
     char buf[MAXDATASIZE];
@@ -74,6 +80,15 @@ int send_config(struct ini_info *info) {
     return 0;
 }
 
+/**
+ * @brief sends the results of compression detection back to the client
+ * 
+ * @param port port number that should be used to send over the results
+ * @param info pointer to the struct ini_info filled with config data
+ * @param low_arrival arrival time of a low entropy packet train
+ * @param high_arrival arrival time of a high entropy packet train
+ * @return 0 in case of success, -1 otherwise
+ */
 int receive_results(unsigned short int port, struct ini_info *info, double *low_arrival, double *high_arrival) {
     int sockfd;
     int numbytes;

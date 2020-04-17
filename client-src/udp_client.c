@@ -30,6 +30,14 @@
   (byte & 0x02 ? '1' : '0'), \
   (byte & 0x01 ? '1' : '0') 
 
+/**
+ * @brief fills the packet train
+ * 
+ * @param char pointer to a train that can be filled with either low or high entropy data
+ * @param num total number of packets in the train
+ * @param size payload size of one packet
+ * @param type 0 for low entropy train and 1 for high entropy train
+ */
 void fillTrain(unsigned char** train, unsigned short int num, unsigned int size, int type) {
     srand(time(NULL));
     u_int16_t id = 0x00;
@@ -45,7 +53,7 @@ void fillTrain(unsigned char** train, unsigned short int num, unsigned int size,
             id += 0b1;
         }
     }
-    else {
+    else if(type == 1) {
         for(int i =0 ; i < num; i++) {
             for(int j = 0; j < size; j++) {
                 train[i][j] = (unsigned char) rand();
@@ -55,8 +63,17 @@ void fillTrain(unsigned char** train, unsigned short int num, unsigned int size,
             id += 0b1;
         }
     }
+    else {
+        perror("Invalid type for filling the packet train!\n");
+    }
 }
 
+/**
+ * @brief prints the contents of a packet in a packet train, used for debugging
+ * 
+ * @param payload pointer to a packet
+ * @param size size of payload
+ */
 void print_payload(unsigned char *payload, unsigned int size) {
     for(int i = 0; i < size; i++) {
         printf(BYTE_TO_BINARY_PATTERN, BYTE_TO_BINARY(payload[i]));
@@ -64,6 +81,12 @@ void print_payload(unsigned char *payload, unsigned int size) {
     puts("\n--------------------------------------------------------");
 }
 
+/**
+ * @brief sends over the packet trains to the server
+ * 
+ * @param info pointer to the struct ini_info filled with config data
+ * @return 0 for success and -1 for failure
+ */
 int udp_train(struct ini_info* info) {
     printf("UDP client started\n");
     LOG("The port is: %d\n", htons(info->server_udp_port));

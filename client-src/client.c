@@ -32,13 +32,6 @@
  */
 int main(int argc, char* argv[]) {
     LOGP("Client Started :)\n");
-    /* Declaration of all structs that we will pass to respective clients and operate on*/
-    /*struct sockaddr_in server_address; // Socket address of a server
-    struct sockaddr_in client_address; // Socket address of a client
-    struct udpheader train_udp; // UDP header for a packet in a packet train
-    struct udppacket one_packet; // One packet from a train
-    time_t meas_time;
-    unsigned short int packet_num; */
 
     char *filename = calloc(strlen(INI_NAME), sizeof(char)); // defaulting a config file
     strcpy(filename, INI_NAME);

@@ -152,6 +152,14 @@ int start_server(u_int16_t port, struct ini_info *info) {
     return 0;
 }
 
+/**
+ * @brief 
+ * 
+ * @param port on which server sends the results
+ * @param low_arrival pointer to the low entropy train arrival time
+ * @param high_arrival pointer to the high entropy train arrival time
+ * @return 0 for success, -1 for failure
+ */
 int send_results(unsigned short int port, double* low_arrival, double *high_arrival) {
     sleep(2);
     int connfd;
