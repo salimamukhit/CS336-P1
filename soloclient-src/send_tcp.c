@@ -24,6 +24,7 @@
 #include "../shared-src/ini_parser.h"
 #include "../shared-src/structs.h"
 #include "../shared-src/logger.h"
+#include "../shared-src/msleep.h"
 #include "create_hdrs.h"
 #include "sniff_rst.h"
 
@@ -190,6 +191,7 @@ int send_tcp(struct ini_info *info, unsigned int packet_no) {
 
     /* Now we need to sniff for the RST packet while the TCP packet is being sent */
 
+    int return_code;
     pid_t child = fork();
     if(child == 0) {
         // Wait for RST flag
@@ -204,6 +206,7 @@ int send_tcp(struct ini_info *info, unsigned int packet_no) {
         free(dst_ip);
         exit(EXIT_FAILURE);
     } else {
+        msleep(100);
         // Send packet.
         if(sendto(sockfd, packet, IP4_HDRLEN + TCP_HDRLEN, 0, (const struct sockaddr *) &sin, sizeof(struct sockaddr)) < 0)  {
             perror("sendto() failed ");
@@ -213,7 +216,10 @@ int send_tcp(struct ini_info *info, unsigned int packet_no) {
             exit(EXIT_FAILURE);
         }
         printf("Sent TCP Packet :)\n");
-        wait(&child);
+        waitpid(child, &return_code, 0);
+        if(return_code == 256) {
+            exit(EXIT_FAILURE);
+        }
     }
 
     free(packet);

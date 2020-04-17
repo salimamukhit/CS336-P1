@@ -231,7 +231,7 @@ int create_tcpheader(struct ip *iphdr, struct tcphdr *tcphdr, struct ini_info *i
     int tcp_flags[8] = { 0 };
 
     // Source port number (16 bits)
-    tcphdr->th_sport = htons(info->server_port);
+    tcphdr->th_sport = htons(dest_port);
 
     // Destination port number (16 bits)
     tcphdr->th_dport = htons(dest_port);
