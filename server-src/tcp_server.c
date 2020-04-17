@@ -15,15 +15,6 @@
 static int sockfd;
 
 /**
- * @brief Holds the information gathered from the INI.
- */
-struct udp_pckt_params {
-    unsigned int payload_size;
-    unsigned int measurement_time;
-    unsigned int number_packets;
-};
-
-/**
  * @brief Reads from the socket and writes the recieved INI to a file.
  * 
  * @param file 
@@ -34,7 +25,7 @@ int retrieve_config(int socket_fd) {
 
     FILE *fp = fopen("received_config.ini","w"); // stores the file content in recieved.txt in the program directory
 
-    if(fp == NULL){
+    if(fp == NULL) {
         printf("Error IN Opening File ");
         return -1;
     }
@@ -126,15 +117,13 @@ int start_server(u_int16_t port, struct ini_info *info) {
 
     // Read client data:
     char read_buf[8096] = { 0 };
-    while(1) { //for(int i = 0; i < 256; i++) {
+    while(1) {
         char temp_buf[256] = { 0 };
         read(connfd, temp_buf, 256);
         if(strcmp("EOF", temp_buf) == 0) break;
 
         strncat(read_buf, temp_buf, 255);
-        if(temp_buf != NULL && *temp_buf != '\0') LOG("Client says: %s", temp_buf);
     }
-    LOG("File Contents:\n%s\n", read_buf);
 
     char response_buf[256] = { 0 };
 

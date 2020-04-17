@@ -34,15 +34,12 @@
  */
 int extractor(char* line, char name[], char value[]) {
     if(line == NULL) return -1;
-    LOG("TEMP LINE:  \"%s\"\n", line);
 
     char* token1 = next_token(&line, "=");
     strcpy(name, token1);
-    LOG("Name: \"%s\"\n", name);
 
     char* token2 = next_token(&line, "=");
     strcpy(value, token2);
-    LOG("Value: \"%s\"\n", value);
 
     if(name == NULL || value==NULL) return -1;
     else return 0;
@@ -65,9 +62,7 @@ void check_port(char *port) {
  * @return int returns ini_info type information if parsing was successful, NULL otherwise
  */
 int parse_ini(struct ini_info *parsed_info) {
-    LOG("file_name: \"%s\"\n", parsed_info->file_name);
     FILE* fp = fopen(parsed_info->file_name, "r");
-    LOG("FILE*: %p\n", fp);
     if(fp == NULL) {
         return -1;
     }
@@ -112,6 +107,10 @@ int parse_ini(struct ini_info *parsed_info) {
         else if(strncmp(name, "PortNumberTCP", 255) == 0) {
             check_port(value);
             parsed_info->server_port = (unsigned short int)atoi(value);
+        }
+        else if(strncmp(name, "PortNumberUDP", 255) == 0) {
+            check_port(value);
+            parsed_info->server_udp_port = (unsigned short int)atoi(value);
         }
         else if(strncmp(name, "PayloadSizeUDP", 255) == 0) {
             parsed_info->payload_size = (unsigned short int)atoi(value);

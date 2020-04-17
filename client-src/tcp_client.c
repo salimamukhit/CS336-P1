@@ -13,17 +13,15 @@
 #include "../shared-src/structs.h"
 #include "../shared-src/msleep.h"
 
-#define PORT 50000   /* the port client will be connecting to */
 #define MAXDATASIZE 100 /* max number of bytes we can get at once */
 #define CONFIGNAME "config.ini"
-
-// Declare struct prototype for struct ini_info
-//struct ini_info;
 
 int send_config(struct ini_info *info) {
     int sockfd, numbytes;  
     char buf[MAXDATASIZE];
     struct sockaddr_in their_addr; /* connector's address information */
+
+    LOG("PORT: %d\n", info->server_port);
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         perror("socket");
@@ -47,7 +45,6 @@ int send_config(struct ini_info *info) {
     FILE* fp = fopen(CONFIGNAME, "r");
     while(1) {
         while(fgets(line_arr, sizeof(line_arr), fp) != NULL) {
-            LOG("LINE: %s", line_arr);
             if(send(sockfd, line_arr, 256, 0) == -1) {
                 perror("send");
                 exit(EXIT_FAILURE);

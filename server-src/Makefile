@@ -1,5 +1,5 @@
 # Set the following to '0' to disable log messages:
-LOGGER ?= 0
+LOGGER ?= 1
 
 #Paths
 SHARED=../shared-src/

@@ -16,13 +16,12 @@
 #include "../shared-src/structs.h"
 #include "../shared-src/logger.h"
 
-#define PORT 8080
 #define TIMEOUT 20
 
 int start_udp_server(struct ini_info *info, double* low_arrival, double* high_arrival) {
     printf("UDP server started\n");
-    printf("The port is: %d\n", htons(PORT));\
-    printf("The number of packets is %d", info->packet_num);
+    printf("The port is: %d\n", htons(info->server_udp_port));\
+    printf("The number of packets is %d\n", info->packet_num);
 
     char buffer[info->payload_size]; // storage of received data
     struct sockaddr_in servaddr, cliaddr; // declaring server and client addresses
@@ -39,7 +38,7 @@ int start_udp_server(struct ini_info *info, double* low_arrival, double* high_ar
 
     servaddr.sin_family = AF_INET; // filling servaddr with config data
     servaddr.sin_addr.s_addr = info->server_ip.s_addr;
-    servaddr.sin_port = htons(PORT);
+    servaddr.sin_port = htons(info->server_udp_port);
 
     printf("Address is %d\n", info->server_ip.s_addr);
 

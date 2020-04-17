@@ -19,6 +19,7 @@ struct ini_info {
     unsigned short head_port;
     unsigned short tail_port;
     unsigned short server_port;
+    unsigned short server_udp_port;
     unsigned short int payload_size;
     time_t meas_time;
     unsigned short int packet_num;

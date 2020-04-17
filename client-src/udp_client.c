@@ -17,7 +17,8 @@
 #include "../shared-src/structs.h"
 #include "../shared-src/msleep.h"
 
-#define PORT 8080
+#define ID_OFFSET 2*sizeof(char*)
+#define PREVIEW_SIZE 20
 #define BYTE_TO_BINARY_PATTERN "%c%c%c%c%c%c%c%c"
 #define BYTE_TO_BINARY(byte)  \
   (byte & 0x80 ? '1' : '0'), \
@@ -65,7 +66,7 @@ void print_payload(unsigned char *payload, unsigned int size) {
 
 int udp_train(struct ini_info* info) {
     printf("UDP client started\n");
-    LOG("The port is: %d\n", htons(PORT));
+    LOG("The port is: %d\n", htons(info->server_udp_port));
     LOG("Inter-measurement time: %ld\n", info->meas_time);
 
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -81,7 +82,7 @@ int udp_train(struct ini_info* info) {
     memset(&servaddr, 0, sizeof(servaddr));
 
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(PORT);
+    servaddr.sin_port = htons(info->server_udp_port);
     servaddr.sin_addr.s_addr = info->server_ip.s_addr; //INADDR_ANY;
     printf("Address is %d\n", info->server_ip.s_addr);
 
@@ -104,20 +105,14 @@ int udp_train(struct ini_info* info) {
     fillTrain(low_entropy, packets, size, 0);
     fillTrain(high_entropy, packets, size, 1);
 
-    //printf("Low entropy packet:\n");
-    //print_payload(low_entropy[0], size);
-    //printf("High entropy packet:\n");
-    //print_payload(high_entropy[0], size);
 
-    //printf("Low entropy packet:  %.*s\n", packets, low_entropy[0]);
-    puts("Low Entropy Data:");
-    print_payload(*low_entropy, info->payload_size);
+    puts("Low Entropy Data Preview:");
+    print_payload(*(low_entropy + ID_OFFSET), PREVIEW_SIZE);
     puts("");
-    //puts("High entropy gets null-terminated prematurely becuase of the randomness.");
-    //printf("High entropy packet:  %s\n", high_entropy[0]);
-    puts("High Entropy Data:");
-    print_payload(*high_entropy, info->payload_size);
+    puts("High Entropy Data Preview:");
+    print_payload(*(high_entropy + ID_OFFSET), PREVIEW_SIZE);
     puts("");
+
 
     for(int i = 0; i < packets; i++) {
         msleep(1);
