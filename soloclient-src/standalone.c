@@ -32,7 +32,7 @@
 
 #define _GNU_SOURCE
 #define INI_NAME "solo_config.ini"
-#define MAX_CAPTURE_BYTES 2048
+#define IP4_HDRLEN 20 // IPv4 header length
 
 #define HEAD_TCP_NO 0
 #define TAIL_TCP_NO 1
@@ -158,31 +158,30 @@ int send_udp(struct ini_info *info, int entropy_type) {
 
     fillTrain(train, info->packet_num, info->payload_size, entropy_type);
     // Interface to send packet through.
-    strcpy (interface, info->interface);
+    strcpy(interface, info->interface);
 
     // Submit request for a socket descriptor to look up interface.
-    if ((sd = socket (AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) {
-        perror ("socket() failed to get socket descriptor for using ioctl() ");
-        exit (EXIT_FAILURE);
+    if((sd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) {
+        perror("socket() failed to get socket descriptor for using ioctl() ");
+        exit(EXIT_FAILURE);
     }
 
     // Use ioctl() to look up interface name and get its MAC address.
-    memset (&ifr, 0, sizeof (ifr));
-    snprintf (ifr.ifr_name, sizeof (ifr.ifr_name), "%s", interface);
-    if (ioctl (sd, SIOCGIFHWADDR, &ifr) < 0) {
-        perror ("ioctl() failed to get source MAC address ");
+    memset(&ifr, 0, sizeof(ifr));
+    snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", interface);
+    if(ioctl(sd, SIOCGIFHWADDR, &ifr) < 0) {
+        perror("ioctl() failed to get source MAC address ");
         return (EXIT_FAILURE);
     }
-    close (sd);
+    close(sd);
 
     // Find interface index from interface name and store index in
     // struct sockaddr_ll device, which will be used as an argument of sendto().
-    memset (&device, 0, sizeof (device));
-    if ((device.sll_ifindex = if_nametoindex (interface)) == 0) {
-        perror ("if_nametoindex() failed to obtain interface index ");
-        exit (EXIT_FAILURE);
+    memset(&device, 0, sizeof(device));
+    if((device.sll_ifindex = if_nametoindex(interface)) == 0) {
+        perror("if_nametoindex() failed to obtain interface index ");
+        exit(EXIT_FAILURE);
     }
-    // printf ("Index for interface %s is %i\n", interface, device.sll_ifindex);
 
     // Set destination MAC address: you need to fill this out
     dst_mac[0] = 0xff;
@@ -193,66 +192,66 @@ int send_udp(struct ini_info *info, int entropy_type) {
     dst_mac[5] = 0xff;
 
     // Source IPv4 address: you need to fill this out
-    strcpy (src_ip, info->client_ip);
+    strcpy(src_ip, info->client_ip);
 
     // Destination URL or IPv4 address: you need to fill this out
-    strcpy (target, info->standalone_dst);
+    strcpy(target, info->standalone_dst);
 
     // Fill out hints for getaddrinfo().
-    memset (&hints, 0, sizeof (struct addrinfo));
+    memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = hints.ai_flags | AI_CANONNAME;
 
     // Resolve target using getaddrinfo().
-    if ((status = getaddrinfo (target, NULL, &hints, &res)) != 0) {
-        fprintf (stderr, "getaddrinfo() failed: %s\n", gai_strerror (status));
-        exit (EXIT_FAILURE);
+    if((status = getaddrinfo(target, NULL, &hints, &res)) != 0) {
+        fprintf(stderr, "getaddrinfo() failed: %s\n", gai_strerror(status));
+        exit(EXIT_FAILURE);
     }
     ipv4 = (struct sockaddr_in *) res->ai_addr;
     tmp = &(ipv4->sin_addr);
-    if (inet_ntop (AF_INET, tmp, dst_ip, INET_ADDRSTRLEN) == NULL) {
+    if(inet_ntop(AF_INET, tmp, dst_ip, INET_ADDRSTRLEN) == NULL) {
         status = errno;
-        fprintf (stderr, "inet_ntop() failed.\nError message: %s", strerror (status));
-        exit (EXIT_FAILURE);
+        fprintf(stderr, "inet_ntop() failed.\nError message: %s", strerror(status));
+        exit(EXIT_FAILURE);
     }
-    freeaddrinfo (res);
+    freeaddrinfo(res);
 
     // Fill out sockaddr_ll.
     device.sll_family = AF_PACKET;
-    device.sll_protocol = htons (ETH_P_IP);
-    memcpy (device.sll_addr, dst_mac, 6);
+    device.sll_protocol = htons(ETH_P_IP);
+    memcpy(device.sll_addr, dst_mac, 6);
     device.sll_halen = 6;
 
     // UDP data
     datalen = info->payload_size;
 
     // IPv4 header
+    iphdr.ip_sum = 0x00;
     create_ipheader(&iphdr, info, info->packet_ttl, UDP_TYPE_NO);
 
     // Source IPv4 address (32 bits)
-    if ((status = inet_pton (AF_INET, src_ip, &(iphdr.ip_src))) != 1) {
-        fprintf (stderr, "inet_pton() failed.\nError message: %s", strerror (status));
-        exit (EXIT_FAILURE);
+    if((status = inet_pton(AF_INET, src_ip, &(iphdr.ip_src))) != 1) {
+        fprintf(stderr, "inet_pton() failed.\nError message: %s", strerror(status));
+        exit(EXIT_FAILURE);
     }
 
-    // Destination IPv4 address (32 bits)
-    if ((status = inet_pton (AF_INET, dst_ip, &(iphdr.ip_dst))) != 1) {
-        fprintf (stderr, "inet_pton() failed.\nError message: %s", strerror (status));
-        exit (EXIT_FAILURE);
+    // Destination IPv4 address(32 bits)
+    if((status = inet_pton(AF_INET, dst_ip, &(iphdr.ip_dst))) != 1) {
+        fprintf(stderr, "inet_pton() failed.\nError message: %s", strerror(status));
+        exit(EXIT_FAILURE);
     }
 
     // UDP header
     create_udpheader(&iphdr, &udphdr, info, data);
 
     // Open raw socket descriptor.
-    if ((sd = socket (PF_PACKET, SOCK_DGRAM, htons (ETH_P_ALL))) < 0) {
-        perror ("socket() failed ");
-        exit (EXIT_FAILURE);
+    if((sd = socket(PF_PACKET, SOCK_DGRAM, htons(ETH_P_ALL))) < 0) {
+        perror("socket() failed ");
+        exit(EXIT_FAILURE);
     }
 
     // Fill out ethernet frame header.
-
     // Ethernet frame length = ethernet data (IP header + UDP header + UDP data)
     packet_len = IP4_HDRLEN + UDP_HDRLEN + datalen;
 
@@ -261,14 +260,16 @@ int send_udp(struct ini_info *info, int entropy_type) {
 
     for(i = 0; i < info->packet_num; i++) {
         iphdr.ip_id = htons(i);
+        iphdr.ip_sum = 0x00;
+        iphdr.ip_sum = checksum((uint16_t *) &iphdr, IP4_HDRLEN);
         memcpy(data, train[i], info->payload_size);
         memcpy(udp_packet, &iphdr, IP4_HDRLEN);
         memcpy(udp_packet + IP4_HDRLEN, &udphdr, UDP_HDRLEN);
         memcpy(udp_packet + IP4_HDRLEN + UDP_HDRLEN, data, datalen); // UDP data
         
-        if((bytes = sendto (sd, udp_packet, packet_len, 0, (struct sockaddr *) &device, sizeof(device))) <= 0) {
-            perror ("sendto() failed");
-            exit (EXIT_FAILURE);
+        if((bytes = sendto(sd, udp_packet, packet_len, 0,(struct sockaddr *) &device, sizeof(device))) <= 0) {
+            perror("sendto() failed");
+            exit(EXIT_FAILURE);
         }
         memset(udp_packet, 0, packet_len);
     }
