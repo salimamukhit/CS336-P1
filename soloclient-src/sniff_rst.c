@@ -157,7 +157,7 @@ int get_rst(struct ini_info *info) {
         pcap_close(handle);
         fprintf(stderr, "SERVER_WAIT_TIME: '%d' exceeded!\n", (int) SERVER_WAIT_TIME);
         fprintf(stderr, "Server failed to respond! Exiting now!\n");
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     /* cleanup */
