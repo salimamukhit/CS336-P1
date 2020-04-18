@@ -123,9 +123,9 @@ uint16_t udp4_checksum(struct ip *iphdr, struct udphdr *udphdr, uint8_t *payload
     /* Copy header and pseudoheader to a buffer to compute the checksum */  
     memcpy(udpcsumblock, &pseudohdr, sizeof(udp_phdr_t));   
     memcpy((udpcsumblock + sizeof(udp_phdr_t)), udphdr, sizeof(struct udphdr));
-        
+
     /* Compute the UDP checksum as the standard says */
-    udphdr->check = checksum((unsigned short *)(udpcsumblock), sizeof(udpcsumblock));
+    udphdr->len = checksum((unsigned short *)(udpcsumblock), sizeof(udpcsumblock));
 
     return 0;
 }
