@@ -8,9 +8,9 @@ In this file there will be a description on how to execute Server-Client Applica
 
 Go to configuration file config.ini. It is located in client-src folder. If you open it, you can see all the configurations needed for this part of the project. Both client and server run on one machine with a loop-back, so the IP address used to bind server is 127.0.0.1, as well as it is the IP address of the client. 
 
-1) In your terminal you should go to server-src folder. Then you run a make command in Terminal. This will compile a program. Then you have to run it with ./server. If it doesn't work, try running it with sudo ./server.
+1) In your terminal you should go to server-src folder. Then you run a make command in Terminal. This will compile a program. Then you have to run it with ./server. If it doesn't work, try running it with sudo ./server. As an argument for the run you may pass the name of INI config file. Is name of config file is not provided, the program will use a default one which is stored in its source folder. Note that the config file must preserve the format we described below.
 
-2) In your other terminal window you should go to client-src folder. Then you run a make command in Terminal. This will compile a client program. Then you have to run it with ./client. If it doesn't work, try running it with sudo ./client.
+2) In your other terminal window you should go to client-src folder. Then you run a make command in Terminal. This will compile a client program. Then you have to run it with ./client. If it doesn't work, try running it with sudo ./client. As an argument for the run you may pass the name of INI config file. Is name of config file is not provided, the program will use a default one which is stored in its source folder. Note that the config file must preserve the format we described below.
 
 3) In server-src you can see that the file received-config.ini appeared. This is the result of client sending the configuration file to the server.
 
@@ -22,7 +22,7 @@ Go to configuration file solo-config.ini. It is located in soloclient-src. If yo
 
 We used libpcap library to capture RST packets. If you do not have it installed on your machine, in your Terminal run sudo apt install libpcap-dev
 
-1) In your terminal you should open a soloclient-src folder. Run make command which will compile a standalone application. Then run the program with sudo ./standalone. 
+1) In your terminal you should open a soloclient-src folder. Run make command which will compile a standalone application. Then run the program with sudo ./standalone. As an argument for the run you may pass the name of INI config file. Is name of config file is not provided, the program will use a default one which is stored in its source folder. Note that the config file must preserve the format we described below.
 
 2) The standalone.pcap includes the packets that were sent through this application. For convenience we only captured 60 UDP packets in each train, so TCP packets would be more visible. We did so by setting the number of packets in configuration fle to 60 instead of 6000.
 
