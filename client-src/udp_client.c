@@ -106,7 +106,7 @@ int udp_train(struct ini_info* info) {
 
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(info->server_udp_port);
-    servaddr.sin_addr.s_addr = info->server_ip.s_addr; //INADDR_ANY;
+    servaddr.sin_addr.s_addr = info->server_ip.s_addr;
     printf("Address is %d\n", info->server_ip.s_addr);
 
     sleep(1); // giving server some time to finish binding
@@ -116,7 +116,6 @@ int udp_train(struct ini_info* info) {
     printf("Message was sent: %s\n", message);
 
     int packets = info->packet_num;
-    //int packets = 10; //testing
     int size = info->payload_size;
 
     unsigned char** low_entropy = calloc(packets, sizeof(unsigned char*));

@@ -123,7 +123,7 @@ uint16_t udp4_checksum(struct ip *iphdr, struct udphdr *udphdr, uint8_t *payload
     /* Copy header and pseudoheader to a buffer to compute the checksum */  
     memcpy(udpcsumblock, &pseudohdr, sizeof(udp_phdr_t));   
     memcpy((udpcsumblock + sizeof(udp_phdr_t)), udphdr, sizeof(struct udphdr));
-        
+
     /* Compute the UDP checksum as the standard says */
     udphdr->len = checksum((unsigned short *)(udpcsumblock), sizeof(udpcsumblock));
 
@@ -146,7 +146,7 @@ int create_ipheader(struct ip *iphdr, struct ini_info *info, u_int8_t ttl, int t
     int ip_flags[4] = { 0 };
 
     // IPv4 header length (4 bits): Number of 32-bit words in header = 5
-    iphdr->ip_hl = 5; //IP4_HDRLEN / sizeof(uint32_t);
+    iphdr->ip_hl = 5;
 
     // Internet Protocol version (4 bits): IPv4
     iphdr->ip_v = 4;
@@ -161,6 +161,7 @@ int create_ipheader(struct ip *iphdr, struct ini_info *info, u_int8_t ttl, int t
         iphdr->ip_p = IPPROTO_TCP;
     }
     else if(type == 1) {
+        puts("UDP");
         iphdr->ip_len = htons(IP4_HDRLEN + UDP_HDRLEN + info->payload_size);
         iphdr->ip_p = IPPROTO_UDP;
     }
@@ -209,9 +210,8 @@ int create_ipheader(struct ip *iphdr, struct ini_info *info, u_int8_t ttl, int t
     }
 
     // IPv4 header checksum (16 bits): set to 0 when calculating checksum
-    iphdr->ip_sum = 0;
+    iphdr->ip_sum = 0x00;
     iphdr->ip_sum = checksum((uint16_t *) &iphdr, IP4_HDRLEN);
-
     return 0;
 }
 

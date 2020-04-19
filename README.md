@@ -24,13 +24,13 @@ We used libpcap library to capture RST packets. If you do not have it installed 
 
 1) In your terminal you should open a soloclient-src folder. Run make command which will compile a standalone application. Then run the program with sudo ./standalone. 
 
-2) The standalone.pcap includes the packets that were sent through this application.
+2) The standalone.pcap includes the packets that were sent through this application. For convenience we only captured 60 UDP packets in each train, so TCP packets would be more visible. We did so by setting the number of packets in configuration fle to 60 instead of 6000.
 
 -------------------- Additional Information --------------------
 
 The shared-src folder contains files with helper methods and parser of a configuration file. The purpose of each program is described.
 
---------------------     INI Information    ---------------------
+-------------------- INI Information ---------------------
 
 Notes before use:
 1) Comments are not supported in this format.
